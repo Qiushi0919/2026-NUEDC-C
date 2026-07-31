@@ -2,6 +2,10 @@
 
 本仓库保存 C 题数字钥匙实验系统的 Windows 上位机、声光控制模块固件、项目网站、定位套件开发资料和 2026 电赛原题合集。
 
+> 🌐 **项目网站：** [在线查看 2026 电赛 C 题数字钥匙实验系统](https://nuedc-digital-key-2026.flaynixpang.chatgpt.site)
+>
+> 📦 **GitHub 仓库：** [Qiushi0919/2026-NUEDC-C](https://github.com/Qiushi0919/2026-NUEDC-C)
+
 ## 软件运行截图
 
 | 感应区：身份通过，等待靠近 | 迎宾区：迎宾声光开启 |
