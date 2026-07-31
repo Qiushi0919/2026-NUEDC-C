@@ -27,13 +27,13 @@ public sealed class MainForm : Form
     private readonly TableLayoutPanel _sidePanel = new();
     private readonly ListBox _eventList = new();
 
-    private readonly Label _fourBitValue = ValueLabel(16f);
-    private readonly Label _allowedIdValue = ValueLabel(13f);
+    private readonly Label _fourBitValue = ValueLabel(14f);
+    private readonly Label _allowedIdValue = ValueLabel(12f);
     private readonly Label _verifyValue = ValueLabel(12f);
     private readonly Label _expectedIdCaption = SmallLabel("钥匙身份ID");
     private readonly Label _expectedIdPreview = ValueLabel(13f);
-    private readonly Label _distanceValue = ValueLabel(17f);
-    private readonly Label _angleValue = ValueLabel(17f);
+    private readonly Label _distanceValue = ValueLabel(15f);
+    private readonly Label _angleValue = ValueLabel(15f);
     private readonly Label _xValue = ValueLabel(10f);
     private readonly Label _yValue = ValueLabel(10f);
     private readonly Label _rateValue = ValueLabel(9f);
@@ -112,7 +112,7 @@ public sealed class MainForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         Controls.Add(root);
 
         root.Controls.Add(BuildHeader(), 0, 0);
@@ -245,8 +245,8 @@ public sealed class MainForm : Form
         _sidePanel.ColumnCount = 1;
         _sidePanel.RowCount = 4;
         _sidePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        _sidePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
-        _sidePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 108));
+        _sidePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
+        _sidePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 124));
         _sidePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 116));
         _sidePanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         _sidePanel.Padding = Padding.Empty;
@@ -261,7 +261,7 @@ public sealed class MainForm : Form
 
     private Control BuildIdentityCard()
     {
-        var card = Card("身份识别 · 要求1/2/6", 96, out var body);
+        var card = Card("身份识别 · 要求1/2/6", 100, out var body);
         var grid = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -269,21 +269,25 @@ public sealed class MainForm : Form
             RowCount = 2,
             Padding = new Padding(7, 2, 7, 2)
         };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 84));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 78));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
 
         grid.Controls.Add(SmallLabel("当前钥匙ID"), 0, 0);
+        _fourBitValue.AutoSize = false;
         _fourBitValue.Dock = DockStyle.Fill;
+        _fourBitValue.Margin = Padding.Empty;
         _fourBitValue.TextAlign = ContentAlignment.MiddleLeft;
         grid.Controls.Add(_fourBitValue, 1, 0);
         grid.Controls.Add(SmallLabel("门锁允许ID"), 2, 0);
+        _allowedIdValue.AutoSize = false;
         _allowedIdValue.Dock = DockStyle.Fill;
+        _allowedIdValue.Margin = Padding.Empty;
         _allowedIdValue.TextAlign = ContentAlignment.MiddleLeft;
         grid.Controls.Add(_allowedIdValue, 3, 0);
         _verifyValue.Dock = DockStyle.Fill;
@@ -312,10 +316,10 @@ public sealed class MainForm : Form
 
     private Control BuildPositionCard()
     {
-        var card = Card("实时定位 · 要求3", 108, out var body);
+        var card = Card("实时定位 · 要求3", 124, out var body);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 72));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 28));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
         var top = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
         top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
