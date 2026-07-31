@@ -84,7 +84,9 @@ public sealed class MainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1100, 620);
         Size = new Size(1280, 672);
+        FormBorderStyle = FormBorderStyle.None;
         WindowState = FormWindowState.Maximized;
+        TopMost = true;
         BackColor = Color.FromArgb(241, 245, 249);
         Font = new Font("Microsoft YaHei UI", 10f);
         AutoScaleMode = AutoScaleMode.Dpi;
