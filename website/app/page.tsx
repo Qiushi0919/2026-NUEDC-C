@@ -1,27 +1,30 @@
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const asset = (path: string) => `${basePath}${path}`;
+
 const scenarios = [
   {
-    image: "/images/software-sensing.png",
+    image: asset("/images/software-sensing.png"),
     eyebrow: "SENSING · 感应区",
     title: "身份通过，等待靠近",
     value: "2.60 m / −25.0°",
     tone: "cyan",
   },
   {
-    image: "/images/software-welcome.png",
+    image: asset("/images/software-welcome.png"),
     eyebrow: "WELCOME · 迎宾区",
     title: "迎宾声光自动开启",
     value: "1.50 m / +18.0°",
     tone: "amber",
   },
   {
-    image: "/images/software-unlock.png",
+    image: asset("/images/software-unlock.png"),
     eyebrow: "UNLOCK · 开锁区",
     title: "身份通过，自动开锁",
     value: "0.65 m / −8.0°",
     tone: "green",
   },
   {
-    image: "/images/software-mismatch.png",
+    image: asset("/images/software-mismatch.png"),
     eyebrow: "DENIED · 身份不匹配",
     title: "拒绝放行，保持闭锁",
     value: "0.75 m / +10.0°",
@@ -82,7 +85,7 @@ export default function Home() {
             </p>
             <div className="hero-actions">
               <a className="button primary" href="#software">查看运行效果 <span>↓</span></a>
-              <a className="button secondary" href="/downloads/C题_基于无线通信的数字钥匙实验系统.pdf" target="_blank">查看原题 PDF</a>
+              <a className="button secondary" href={asset("/downloads/C题_基于无线通信的数字钥匙实验系统.pdf")} target="_blank">查看原题 PDF</a>
             </div>
             <div className="hero-facts" aria-label="系统关键指标">
               <div><strong>±45°</strong><span>有效方位角</span></div>
@@ -98,7 +101,7 @@ export default function Home() {
               <p>digital-key.console / live view</p>
               <b>COM22 · 10 Hz</b>
             </div>
-            <img src="/images/software-unlock.png" alt="数字钥匙实验系统开锁区运行界面" />
+            <img src={asset("/images/software-unlock.png")} alt="数字钥匙实验系统开锁区运行界面" />
             <div className="featured-caption">
               <span className="status-dot" />
               <p><small>FEATURED PREVIEW</small><strong>身份通过 · 已进入开锁区</strong></p>
@@ -140,23 +143,23 @@ export default function Home() {
           </div>
           <div className="hardware-grid">
             <figure className="hardware-card hardware-main">
-              <img src="/images/test-scene.jpeg" alt="数字钥匙系统现场测试场景" loading="lazy" />
+              <img src={asset("/images/test-scene.jpeg")} alt="数字钥匙系统现场测试场景" loading="lazy" />
               <figcaption><span>01 · SYSTEM TEST</span><strong>完整测试场景</strong><p>基站、显示装置、门锁结构与移动供电集成测试。</p></figcaption>
             </figure>
             <figure className="hardware-card">
-              <img src="/images/smart-lock-1.jpeg" alt="智能门锁整体结构一" loading="lazy" />
+              <img src={asset("/images/smart-lock-1.jpeg")} alt="智能门锁整体结构一" loading="lazy" />
               <figcaption><span>02 · SMART LOCK</span><strong>智能门锁整体结构</strong></figcaption>
             </figure>
             <figure className="hardware-card">
-              <img src="/images/smart-lock-2.jpeg" alt="智能门锁整体结构二" loading="lazy" />
+              <img src={asset("/images/smart-lock-2.jpeg")} alt="智能门锁整体结构二" loading="lazy" />
               <figcaption><span>03 · INTEGRATION</span><strong>板卡与显示装置集成</strong></figcaption>
             </figure>
             <figure className="hardware-card">
-              <img src="/images/digital-key.jpg" alt="数字钥匙信标" loading="lazy" />
+              <img src={asset("/images/digital-key.jpg")} alt="数字钥匙信标" loading="lazy" />
               <figcaption><span>04 · DIGITAL KEY</span><strong>独立数字钥匙信标</strong></figcaption>
             </figure>
             <figure className="hardware-card">
-              <img src="/images/sound-light-1.jpeg" alt="蓝牙声光控制模块" loading="lazy" />
+              <img src={asset("/images/sound-light-1.jpeg")} alt="蓝牙声光控制模块" loading="lazy" />
               <figcaption><span>05 · CONTROLLER</span><strong>蓝牙声光 / DIP 模块</strong></figcaption>
             </figure>
           </div>
@@ -212,7 +215,7 @@ export default function Home() {
             <p>题目原文、定位套件开发资料、上位机源码和声光控制固件均已归档，便于比赛现场查阅和后续复现。</p>
           </div>
           <div className="resource-grid">
-            <a className="resource-card primary-resource" href="/downloads/C题_基于无线通信的数字钥匙实验系统.pdf" target="_blank">
+            <a className="resource-card primary-resource" href={asset("/downloads/C题_基于无线通信的数字钥匙实验系统.pdf")} target="_blank">
               <span>PDF</span><div><small>COMPETITION BRIEF</small><h3>C 题原题</h3><p>基于无线通信的数字钥匙实验系统完整题面。</p></div><b>打开 ↗</b>
             </a>
             <a className="resource-card" href={`${repo}/tree/main/resources/2026年电赛原题合集`} target="_blank" rel="noreferrer">
