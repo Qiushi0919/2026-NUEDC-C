@@ -59,19 +59,24 @@ dotnet run --project .\pc-software\tests\ProtocolSmoke\ProtocolSmoke.csproj -c R
 
 下列照片均保存在 `Figs/` 目录中。
 
-| 数字钥匙 | 声光控制模块 |
-| --- | --- |
-| <img src="Figs/钥匙.jpg" alt="数字钥匙" width="360"> | <img src="Figs/声光模块1.jpeg" alt="声光控制模块正面" width="360"> |
-| `钥匙.jpg` | `声光模块1.jpeg` |
+### 数字钥匙
 
-| 声光控制模块接线 | 智能门锁整体结构 |
-| --- | --- |
-| <img src="Figs/声光模块2.jpeg" alt="声光控制模块接线" width="360"> | <img src="Figs/智能门锁1（Intel板卡 显示装置 uwb基站）.jpeg" alt="智能门锁、Intel 板卡、显示装置和 UWB 基站" width="360"> |
-| `声光模块2.jpeg` | `智能门锁1（Intel板卡 显示装置 uwb基站）.jpeg` |
+<img src="Figs/钥匙.jpg" alt="数字钥匙" width="360">
 
-| 智能门锁细节一 | 智能门锁细节二 |
+`钥匙.jpg`
+
+### 声光控制模块
+
+| 声光控制模块 | 声光控制模块接线 |
 | --- | --- |
-| <img src="Figs/智能门锁2.jpeg" alt="智能门锁细节一" width="360"> | <img src="Figs/智能门锁3.jpeg" alt="智能门锁细节二" width="360"> |
+| <img src="Figs/声光模块1.jpeg" alt="声光控制模块正面" width="360"> | <img src="Figs/声光模块2.jpeg" alt="声光控制模块接线" width="360"> |
+| `声光模块1.jpeg` | `声光模块2.jpeg` |
+
+### 智能门锁整体
+
+| 智能门锁整体一 | 智能门锁整体二 |
+| --- | --- |
+| <img src="Figs/智能门锁2.jpeg" alt="智能门锁整体一" width="360"> | <img src="Figs/智能门锁3.jpeg" alt="智能门锁整体二" width="360"> |
 | `智能门锁2.jpeg` | `智能门锁3.jpeg` |
 
 ### 测试场景
