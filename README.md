@@ -1,6 +1,47 @@
 # 2026 电赛 C 题：数字钥匙实验系统
 
-本仓库保存 C 题数字钥匙实验系统的上位机软件和声光控制模块固件。
+本仓库保存 C 题数字钥匙实验系统的 Windows 上位机、声光控制模块固件、项目网站、定位套件开发资料和 2026 电赛原题合集。
+
+## 软件运行截图
+
+| 感应区：身份通过，等待靠近 | 迎宾区：迎宾声光开启 |
+| --- | --- |
+| <img src="Figs/软件运行-感应区.png" alt="数字钥匙位于感应区" width="600"> | <img src="Figs/软件运行-迎宾区.png" alt="数字钥匙位于迎宾区" width="600"> |
+| `2.60 m / -25.0°` | `1.50 m / +18.0°` |
+
+| 开锁区：身份通过，自动开锁 | 开锁区：身份不匹配，保持闭锁 |
+| --- | --- |
+| <img src="Figs/软件运行-开锁区.png" alt="数字钥匙位于开锁区并通过身份验证" width="600"> | <img src="Figs/软件运行-身份不匹配.png" alt="数字钥匙位于开锁区但身份不匹配" width="600"> |
+| `0.65 m / -8.0°` | `0.75 m / +10.0°` |
+
+以上截图使用隐藏的命令行演示参数生成。正式启动不会显示演示模式按钮，也不会自动进入演示状态。
+
+## 实物与测试照片
+
+### 智能门锁整体
+
+| 智能门锁整体一 | 智能门锁整体二 |
+| --- | --- |
+| <img src="Figs/智能门锁2.jpeg" alt="智能门锁整体一" width="480"> | <img src="Figs/智能门锁3.jpeg" alt="智能门锁整体二" width="480"> |
+
+### 数字钥匙与声光控制模块
+
+| 数字钥匙 | 声光控制模块 | 声光模块接线 |
+| --- | --- | --- |
+| <img src="Figs/钥匙.jpg" alt="数字钥匙" width="300"> | <img src="Figs/声光模块1.jpeg" alt="声光控制模块正面" width="300"> | <img src="Figs/声光模块2.jpeg" alt="声光控制模块接线" width="300"> |
+
+### 测试场景
+
+<img src="Figs/测试场景1（包含了移动电源）.jpeg" alt="包含移动电源的测试场景" width="760">
+
+## 项目资料
+
+- [2026 年电赛原题合集](resources/2026年电赛原题合集/)
+- [C 题原题 PDF](resources/2026年电赛原题合集/C题_基于无线通信的数字钥匙实验系统.pdf)
+- [ALX-AOA-FIT 定位套件开发资料](resources/ALX-AOA-FIT定位套件开发资料/)
+- [项目网站源码](website/)
+
+第三方厂商软件、驱动和压缩包仅作为开发资料归档，运行前请自行确认来源并进行安全检查。
 
 ## 系统链路
 
@@ -18,15 +59,11 @@
 ## 目录结构
 
 ```text
-pc-software/
-  src/DigitalKeyDisplay/       Windows WinForms 上位机源码
-  tests/ProtocolSmoke/         串口协议冒烟测试
-  CONTROL_LINK.md              上位机与控制模块联调说明
-
-firmware/
-  sound-light-controller/      MSPM0G3507 声光、蓝牙和 DIP 固件
-
-Figs/                           数字钥匙、智能门锁及测试场景实物照片
+pc-software/                    Windows WinForms 上位机源码与协议测试
+firmware/sound-light-controller/ MSPM0G3507 声光、蓝牙和 DIP 固件
+Figs/                            软件运行截图与项目实物照片
+resources/                       原题合集与定位套件开发资料
+website/                         项目展示网站源码
 ```
 
 ## 快速启动
@@ -45,6 +82,12 @@ dotnet run --project .\pc-software\tests\ProtocolSmoke\ProtocolSmoke.csproj -c R
 
 上位机启动后，选择定位基站串口和蓝牙控制串口，蓝牙串口波特率固定为 `115200`。两个设备应使用不同的 COM 口。
 
+隐藏截图演示参数为 `sensing`、`welcome`、`unlock` 和 `mismatch`，例如：
+
+```powershell
+dotnet run --project .\pc-software\src\DigitalKeyDisplay\DigitalKeyDisplay.csproj -c Release -- --demo=unlock
+```
+
 ## 控制模块说明
 
 - 蓝牙串口：`PA10` 为 TX，`PA11` 为 RX。
@@ -54,56 +97,6 @@ dotnet run --project .\pc-software\tests\ProtocolSmoke\ProtocolSmoke.csproj -c R
 - 超过约 500 ms 未收到有效控制帧时，固件进入安全状态并关闭声光输出。
 
 固件工程入口位于 `firmware/sound-light-controller/keil/`，需要对应的 Keil/ARM 工具链编译。
-
-## 软件运行截图
-
-| 感应区：身份通过，等待靠近 | 迎宾区：迎宾声光开启 |
-| --- | --- |
-| <img src="Figs/软件运行-感应区.png" alt="数字钥匙位于感应区" width="600"> | <img src="Figs/软件运行-迎宾区.png" alt="数字钥匙位于迎宾区" width="600"> |
-| `2.60 m / -25.0°` | `1.50 m / +18.0°` |
-
-| 开锁区：身份通过，自动开锁 | 开锁区：身份不匹配，保持闭锁 |
-| --- | --- |
-| <img src="Figs/软件运行-开锁区.png" alt="数字钥匙位于开锁区并通过身份验证" width="600"> | <img src="Figs/软件运行-身份不匹配.png" alt="数字钥匙位于开锁区但身份不匹配" width="600"> |
-| `0.65 m / -8.0°` | `0.75 m / +10.0°` |
-
-以上截图使用隐藏的命令行演示参数生成，正式启动时不会显示演示模式按钮，也不会自动进入演示状态。例如：
-
-```powershell
-dotnet run --project .\pc-software\src\DigitalKeyDisplay\DigitalKeyDisplay.csproj -c Release -- --demo=unlock
-```
-
-可选场景为 `sensing`、`welcome`、`unlock` 和 `mismatch`。
-
-## 实物与测试照片
-
-下列照片均保存在 `Figs/` 目录中。
-
-### 数字钥匙
-
-<img src="Figs/钥匙.jpg" alt="数字钥匙" width="360">
-
-`钥匙.jpg`
-
-### 声光控制模块
-
-| 声光控制模块 | 声光控制模块接线 |
-| --- | --- |
-| <img src="Figs/声光模块1.jpeg" alt="声光控制模块正面" width="360"> | <img src="Figs/声光模块2.jpeg" alt="声光控制模块接线" width="360"> |
-| `声光模块1.jpeg` | `声光模块2.jpeg` |
-
-### 智能门锁整体
-
-| 智能门锁整体一 | 智能门锁整体二 |
-| --- | --- |
-| <img src="Figs/智能门锁2.jpeg" alt="智能门锁整体一" width="360"> | <img src="Figs/智能门锁3.jpeg" alt="智能门锁整体二" width="360"> |
-| `智能门锁2.jpeg` | `智能门锁3.jpeg` |
-
-### 测试场景
-
-<img src="Figs/测试场景1（包含了移动电源）.jpeg" alt="包含移动电源的测试场景" width="720">
-
-`测试场景1（包含了移动电源）.jpeg`
 
 ## 协议文档
 
