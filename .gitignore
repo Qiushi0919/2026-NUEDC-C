@@ -19,6 +19,7 @@ firmware/**/keil/Listings/
 
 # Runtime data and archives
 logs/
+tmp/
 *.csv
 *.zip
 
