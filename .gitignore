@@ -1,0 +1,28 @@
+# .NET / Visual Studio
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.pdb
+
+# Embedded build output
+firmware/**/keil/Objects/
+firmware/**/keil/Listings/
+*.axf
+*.hex
+*.bin
+*.map
+*.lst
+*.o
+*.obj
+
+# Runtime data and archives
+logs/
+*.csv
+*.zip
+
+# OS/editor files
+Thumbs.db
+.DS_Store
+*~

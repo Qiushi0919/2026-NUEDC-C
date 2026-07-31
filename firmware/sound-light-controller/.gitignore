@@ -1,0 +1,22 @@
+# ignore objects and archives, anywhere in the tree.
+*.o
+*.d
+*.axf
+*.bin
+*.map
+*.hex
+*.launch
+*~
+
+
+# ignore STM32CubeIDE generated directories
+.settings/
+Debug/
+Release/
+keil/Objects
+keil/Listings/
+*.uvguix.*
+*.uvoptx
+
+# ignore VSCode Setting directories
+.vscode/
