@@ -25,6 +25,8 @@ pc-software/
 
 firmware/
   sound-light-controller/      MSPM0G3507 声光、蓝牙和 DIP 固件
+
+Figs/                           数字钥匙、智能门锁及测试场景实物照片
 ```
 
 ## 快速启动
@@ -52,6 +54,31 @@ dotnet run --project .\pc-software\tests\ProtocolSmoke\ProtocolSmoke.csproj -c R
 - 超过约 500 ms 未收到有效控制帧时，固件进入安全状态并关闭声光输出。
 
 固件工程入口位于 `firmware/sound-light-controller/keil/`，需要对应的 Keil/ARM 工具链编译。
+
+## 实物与测试照片
+
+下列照片均保存在 `Figs/` 目录中。
+
+| 数字钥匙 | 声光控制模块 |
+| --- | --- |
+| <img src="Figs/钥匙.jpg" alt="数字钥匙" width="360"> | <img src="Figs/声光模块1.jpeg" alt="声光控制模块正面" width="360"> |
+| `钥匙.jpg` | `声光模块1.jpeg` |
+
+| 声光控制模块接线 | 智能门锁整体结构 |
+| --- | --- |
+| <img src="Figs/声光模块2.jpeg" alt="声光控制模块接线" width="360"> | <img src="Figs/智能门锁1（Intel板卡 显示装置 uwb基站）.jpeg" alt="智能门锁、Intel 板卡、显示装置和 UWB 基站" width="360"> |
+| `声光模块2.jpeg` | `智能门锁1（Intel板卡 显示装置 uwb基站）.jpeg` |
+
+| 智能门锁细节一 | 智能门锁细节二 |
+| --- | --- |
+| <img src="Figs/智能门锁2.jpeg" alt="智能门锁细节一" width="360"> | <img src="Figs/智能门锁3.jpeg" alt="智能门锁细节二" width="360"> |
+| `智能门锁2.jpeg` | `智能门锁3.jpeg` |
+
+### 测试场景
+
+<img src="Figs/测试场景1（包含了移动电源）.jpeg" alt="包含移动电源的测试场景" width="720">
+
+`测试场景1（包含了移动电源）.jpeg`
 
 ## 协议文档
 
