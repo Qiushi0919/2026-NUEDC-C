@@ -68,8 +68,8 @@ public static class DigitalKeyControlProtocol
     public const byte Version = 0x01;
     public const int MaximumPayloadLength = 16;
 
-    public static byte[] BuildIdReport(byte sequence, int keyId) =>
-        Encode(ControlMessageType.IdReport, sequence, new[] { (byte)(keyId & 0x0F) });
+    public static byte[] BuildIdReport(byte sequence, int allowedKeyId) =>
+        Encode(ControlMessageType.IdReport, sequence, new[] { (byte)(allowedKeyId & 0x0F) });
 
     public static byte[] BuildLockStatus(byte sequence, ControlLockStatus status)
     {

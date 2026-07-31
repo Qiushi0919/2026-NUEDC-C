@@ -28,8 +28,9 @@ public sealed class MainForm : Form
     private readonly ListBox _eventList = new();
 
     private readonly Label _fourBitValue = ValueLabel(16f);
+    private readonly Label _allowedIdValue = ValueLabel(13f);
     private readonly Label _verifyValue = ValueLabel(12f);
-    private readonly Label _expectedIdCaption = SmallLabel("软件允许ID");
+    private readonly Label _expectedIdCaption = SmallLabel("钥匙身份ID");
     private readonly Label _expectedIdPreview = ValueLabel(13f);
     private readonly Label _distanceValue = ValueLabel(17f);
     private readonly Label _angleValue = ValueLabel(17f);
@@ -50,7 +51,7 @@ public sealed class MainForm : Form
     private readonly CheckBox _medianCheck = new();
 
     private AnchorFrame? _latestFrame;
-    private DoorDecision _decision = DoorLogic.Evaluate(false, 0, 0, 0, 0);
+    private DoorDecision _decision = DoorLogic.Evaluate(false, 0, 0, 0, null);
     private DateTime _lastPositionAt = DateTime.MinValue;
     private DateTime _lastHeartbeatAt = DateTime.MinValue;
     private double _latestDistance;
@@ -65,8 +66,8 @@ public sealed class MainForm : Form
     private uint? _candidateTagId;
     private int _candidateTagCount;
     private int _ignoredFrames;
-    private int _activeExpectedId;
-    private int? _dipExpectedId;
+    private int _activeKeyIdentityId;
+    private int? _dipAllowedId;
     private DateTime _lastDipIdAt = DateTime.MinValue;
     private DateTime _lastControlStatusAt = DateTime.MinValue;
     private DateTime _lastControlErrorAt = DateTime.MinValue;
@@ -264,14 +265,15 @@ public sealed class MainForm : Form
         var grid = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 5,
+            ColumnCount = 6,
             RowCount = 2,
             Padding = new Padding(7, 2, 7, 2)
         };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 84));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
@@ -280,10 +282,14 @@ public sealed class MainForm : Form
         _fourBitValue.Dock = DockStyle.Fill;
         _fourBitValue.TextAlign = ContentAlignment.MiddleLeft;
         grid.Controls.Add(_fourBitValue, 1, 0);
+        grid.Controls.Add(SmallLabel("门锁允许ID"), 2, 0);
+        _allowedIdValue.Dock = DockStyle.Fill;
+        _allowedIdValue.TextAlign = ContentAlignment.MiddleLeft;
+        grid.Controls.Add(_allowedIdValue, 3, 0);
         _verifyValue.Dock = DockStyle.Fill;
         _verifyValue.TextAlign = ContentAlignment.MiddleLeft;
-        grid.Controls.Add(_verifyValue, 2, 0);
-        grid.SetColumnSpan(_verifyValue, 3);
+        grid.Controls.Add(_verifyValue, 4, 0);
+        grid.SetColumnSpan(_verifyValue, 2);
 
         _expectedId.Minimum = 0;
         _expectedId.Maximum = 15;
@@ -299,7 +305,7 @@ public sealed class MainForm : Form
         _changeIdButton.Margin = new Padding(3, 1, 3, 1);
         StylePrimaryButton(_changeIdButton, Color.FromArgb(2, 132, 199));
         grid.Controls.Add(_changeIdButton, 3, 1);
-        grid.SetColumnSpan(_changeIdButton, 2);
+        grid.SetColumnSpan(_changeIdButton, 3);
         body.Controls.Add(grid);
         return card;
     }
@@ -504,8 +510,8 @@ public sealed class MainForm : Form
 
     private void LoadSettingsIntoUi()
     {
-        _activeExpectedId = Math.Clamp(_settings.ExpectedFourBitId, 0, 15);
-        _expectedId.Value = _activeExpectedId;
+        _activeKeyIdentityId = Math.Clamp(_settings.KeyIdentityId, 0, 15);
+        _expectedId.Value = _activeKeyIdentityId;
         UpdateExpectedIdPreview();
         _distanceOffset.Value = Math.Clamp(_settings.DistanceOffsetM, _distanceOffset.Minimum, _distanceOffset.Maximum);
         _angleOffset.Value = Math.Clamp(_settings.AngleOffsetDeg, _angleOffset.Minimum, _angleOffset.Maximum);
@@ -656,13 +662,13 @@ public sealed class MainForm : Form
         {
             _controlLink.Connect(portName);
             _settings.PreferredControlPort = portName;
-            _dipExpectedId = null;
+            _dipAllowedId = null;
             _lastDipIdAt = DateTime.MinValue;
             _lastControlStatusAt = DateTime.MinValue;
             _lastSentControlZone = ControlZone.None;
             _lastSentControlHadKey = false;
             SetControlButton("断开蓝牙", Color.FromArgb(245, 158, 11), true);
-            PostEvent("蓝牙连接", $"{portName} @ 115200, 8N1 · 等待DIP拨码ID");
+            PostEvent("蓝牙连接", $"{portName} @ 115200, 8N1 · 等待门锁DIP允许ID");
             UpdateIdentitySource(DateTime.Now, true);
         }
         catch (Exception ex)
@@ -680,7 +686,7 @@ public sealed class MainForm : Form
             _controlLink.Disconnect();
             PostEvent("蓝牙断开", $"{port} · {reason}");
         }
-        _dipExpectedId = null;
+        _dipAllowedId = null;
         _lastDipIdAt = DateTime.MinValue;
         SetControlButton("连接蓝牙", Color.FromArgb(124, 58, 237), _controlPortCombo.Items.Count > 0);
         UpdateIdentitySource(DateTime.Now, true);
@@ -756,18 +762,21 @@ public sealed class MainForm : Form
         var baseAngle = _medianCheck.Checked ? Median(_angleWindow) : _latestFrame.AzimuthDeg;
         _latestDistance = Math.Max(0, baseDistance + (double)_distanceOffset.Value);
         _latestAngle = baseAngle + (double)_angleOffset.Value;
-        var nextDecision = DoorLogic.Evaluate(true, _latestDistance, _latestAngle, _latestFrame.TagId, EffectiveExpectedId(DateTime.Now));
+        var allowedKeyId = CurrentAllowedKeyId(DateTime.Now);
+        var nextDecision = DoorLogic.Evaluate(true, _latestDistance, _latestAngle,
+            _activeKeyIdentityId, allowedKeyId);
         UpdateLiveUi(_latestFrame, mode, nextDecision);
         ApplyDecision(nextDecision);
         if (mode == "实机" && _recordCheck.Checked)
-            _logger.Write(_latestFrame, mode, _latestDistance, _latestAngle, nextDecision);
+            _logger.Write(_latestFrame, mode, _latestDistance, _latestAngle,
+                _activeKeyIdentityId, allowedKeyId, nextDecision);
     }
 
     private void UpdateLiveUi(AnchorFrame frame, string mode, DoorDecision decision)
     {
         var x = _latestDistance * Math.Sin(_latestAngle * Math.PI / 180.0);
         var y = _latestDistance * Math.Cos(_latestAngle * Math.PI / 180.0);
-        var bits = Convert.ToString(frame.FourBitId, 2).PadLeft(4, '0');
+        var bits = FormatFourBit(_activeKeyIdentityId);
 
         _fourBitValue.Text = $"{bits}₂";
         _distanceValue.Text = $"{_latestDistance:F2} m";
@@ -791,14 +800,16 @@ public sealed class MainForm : Form
     private void ApplyDecision(DoorDecision decision)
     {
         var previous = _decision;
-        if (_controlLink.IsConnected && !HasFreshDipId(DateTime.Now))
+        if (!HasFreshDipId(DateTime.Now))
         {
-            _verifyValue.Text = "等待DIP拨码ID";
+            _verifyValue.Text = "等待放行ID";
             _verifyValue.ForeColor = Color.FromArgb(245, 158, 11);
         }
         else
         {
-            _verifyValue.Text = decision.IdentityMatched ? "✓ 身份验证通过" : "✕ 身份不匹配";
+            _verifyValue.Text = decision.IdentityMatched
+                ? "✓ 身份通过"
+                : "✕ 身份不匹配";
             _verifyValue.ForeColor = decision.IdentityMatched ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38);
         }
         _zoneValue.Text = decision.ZoneText;
@@ -838,14 +849,16 @@ public sealed class MainForm : Form
     private void ApplyOfflineState()
     {
         _lastPositionAt = DateTime.MinValue;
-        _decision = DoorLogic.Evaluate(false, 0, 0, 0, EffectiveExpectedId(DateTime.Now));
+        _decision = DoorLogic.Evaluate(false, 0, 0, _activeKeyIdentityId, CurrentAllowedKeyId(DateTime.Now));
         _radar.HasPosition = false;
         _radar.Decision = _decision;
         _radar.Invalidate();
 
         _fourBitValue.Text = "—";
-        _verifyValue.Text = "等待身份数据";
-        _verifyValue.ForeColor = Color.FromArgb(100, 116, 139);
+        _verifyValue.Text = HasFreshDipId(DateTime.Now) ? "等待钥匙定位" : "等待身份数据";
+        _verifyValue.ForeColor = HasFreshDipId(DateTime.Now)
+            ? Color.FromArgb(14, 116, 144)
+            : Color.FromArgb(100, 116, 139);
         _distanceValue.Text = "— m";
         _angleValue.Text = "— °";
         _xValue.Text = "X = — m";
@@ -873,45 +886,36 @@ public sealed class MainForm : Form
 
     private void UpdateExpectedIdPreview()
     {
-        if (!_controlLink.IsConnected)
-            _expectedIdPreview.Text = $"{FormatFourBit((int)_expectedId.Value)}₂";
+        _expectedIdPreview.Text = $"{FormatFourBit((int)_expectedId.Value)}₂";
     }
 
     private void ApplyExpectedId()
     {
-        if (_controlLink.IsConnected)
-        {
-            PostEvent("身份设置", "蓝牙声光模块在线时，验证ID由DIP拨码开关决定");
-            return;
-        }
-        _activeExpectedId = (int)_expectedId.Value;
-        _settings.ExpectedFourBitId = _activeExpectedId;
+        _activeKeyIdentityId = (int)_expectedId.Value;
+        _settings.KeyIdentityId = _activeKeyIdentityId;
         _settings.Save();
-        PostEvent("身份设置", $"程序允许的钥匙ID已修改为 {FormatFourBit(_activeExpectedId)}₂");
+        _fourBitValue.Text = _latestFrame is null ? "—" : $"{FormatFourBit(_activeKeyIdentityId)}₂";
+        PostEvent("身份设置", $"钥匙身份ID已修改为 {FormatFourBit(_activeKeyIdentityId)}₂");
         RecomputeCurrent();
     }
 
     private void HandleDipId(int id)
     {
         id &= 0x0F;
-        var changed = _dipExpectedId != id;
-        _dipExpectedId = id;
+        var changed = _dipAllowedId != id;
+        _dipAllowedId = id;
         _lastDipIdAt = DateTime.Now;
         UpdateIdentitySource(_lastDipIdAt, true);
         if (changed)
-            PostEvent("DIP身份", $"声光模块拨码ID：{FormatFourBit(id)}₂");
+            PostEvent("门锁权限", $"DIP允许放行的钥匙ID：{FormatFourBit(id)}₂");
     }
 
     private bool HasFreshDipId(DateTime now) =>
-        _controlLink.IsConnected && _dipExpectedId.HasValue &&
+        _controlLink.IsConnected && _dipAllowedId.HasValue &&
         now - _lastDipIdAt <= DipIdTimeout;
 
-    private int? EffectiveExpectedId(DateTime now)
-    {
-        if (!_controlLink.IsConnected)
-            return _activeExpectedId;
-        return HasFreshDipId(now) ? _dipExpectedId : null;
-    }
+    private int? CurrentAllowedKeyId(DateTime now) =>
+        HasFreshDipId(now) ? _dipAllowedId : null;
 
     private void UpdateIdentitySource(DateTime now, bool force = false)
     {
@@ -923,37 +927,42 @@ public sealed class MainForm : Form
 
         var previousMode = _identitySourceMode;
         _identitySourceMode = nextMode;
+        _expectedIdCaption.Text = "钥匙身份ID";
+        _expectedId.Enabled = true;
+        _expectedIdPreview.Text = $"{FormatFourBit((int)_expectedId.Value)}₂";
+        _changeIdButton.Text = "修改钥匙ID";
+        _changeIdButton.Enabled = true;
         switch (nextMode)
         {
             case "dip":
-                var dipId = _dipExpectedId!.Value;
-                _expectedIdCaption.Text = "DIP拨码ID";
-                _expectedId.Value = dipId;
-                _expectedId.Enabled = false;
-                _expectedIdPreview.Text = $"{FormatFourBit(dipId)}₂";
-                _changeIdButton.Text = "DIP控制中";
-                _changeIdButton.Enabled = false;
+                _allowedIdValue.Text = $"{FormatFourBit(_dipAllowedId!.Value)}₂";
+                _allowedIdValue.ForeColor = Color.FromArgb(22, 163, 74);
+                if (_lastPositionAt == DateTime.MinValue)
+                {
+                    _verifyValue.Text = "等待钥匙定位";
+                    _verifyValue.ForeColor = Color.FromArgb(14, 116, 144);
+                }
                 SetControlButton("断开蓝牙", Color.FromArgb(22, 163, 74), true);
                 break;
 
             case "waiting":
-                _expectedIdCaption.Text = "等待DIP ID";
-                _expectedId.Enabled = false;
-                _expectedIdPreview.Text = "—";
-                _changeIdButton.Text = "等待拨码";
-                _changeIdButton.Enabled = false;
+                _allowedIdValue.Text = "等待DIP";
+                _allowedIdValue.ForeColor = Color.FromArgb(245, 158, 11);
+                _verifyValue.Text = "等待放行ID";
+                _verifyValue.ForeColor = Color.FromArgb(245, 158, 11);
                 SetControlButton("断开蓝牙", Color.FromArgb(245, 158, 11), true);
                 if (previousMode == "dip")
-                    PostEvent("蓝牙超时", "超过500 ms未收到DIP ID，已进入安全闭锁状态");
+                    PostEvent("蓝牙超时", "超过500 ms未收到门锁DIP允许ID，已进入安全闭锁状态");
                 break;
 
             default:
-                _expectedIdCaption.Text = "软件允许ID";
-                _expectedId.Value = _activeExpectedId;
-                _expectedId.Enabled = true;
-                _expectedIdPreview.Text = $"{FormatFourBit(_activeExpectedId)}₂";
-                _changeIdButton.Text = "修改钥匙ID";
-                _changeIdButton.Enabled = true;
+                _allowedIdValue.Text = "—";
+                _allowedIdValue.ForeColor = Color.FromArgb(100, 116, 139);
+                if (_lastPositionAt == DateTime.MinValue)
+                {
+                    _verifyValue.Text = "等待门锁连接";
+                    _verifyValue.ForeColor = Color.FromArgb(100, 116, 139);
+                }
                 break;
         }
         RecomputeCurrent();
@@ -966,10 +975,10 @@ public sealed class MainForm : Form
 
         var hasKey = _latestFrame is not null && _lastPositionAt != DateTime.MinValue &&
             now - _lastPositionAt <= TimeSpan.FromMilliseconds(850);
-        var effectiveId = EffectiveExpectedId(now);
+        var allowedKeyId = CurrentAllowedKeyId(now);
         var zone = hasKey ? ToControlZone(_decision.Zone) : ControlZone.None;
         var eventCode = DetermineControlEvent(_lastSentControlHadKey, _lastSentControlZone, hasKey, zone);
-        var auth = !hasKey || !effectiveId.HasValue
+        var auth = !hasKey || !allowedKeyId.HasValue
             ? ControlAuth.Unknown
             : _decision.IdentityMatched ? ControlAuth.Passed : ControlAuth.Failed;
 
@@ -986,7 +995,7 @@ public sealed class MainForm : Form
             state |= ControlStateFlags.Unlocked;
         }
 
-        var keyId = hasKey ? (byte)_latestFrame!.FourBitId : (byte)0;
+        var keyId = hasKey ? (byte)_activeKeyIdentityId : (byte)0;
         var distanceMm = hasKey
             ? (ushort)Math.Clamp((int)Math.Round(_latestDistance * 1000.0), 0, ushort.MaxValue)
             : (ushort)0;
@@ -1118,7 +1127,7 @@ public sealed class MainForm : Form
         _serial.Dispose();
         _controlLink.Dispose();
         _logger.Dispose();
-        _settings.ExpectedFourBitId = _activeExpectedId;
+        _settings.KeyIdentityId = _activeKeyIdentityId;
         _settings.DistanceOffsetM = _distanceOffset.Value;
         _settings.AngleOffsetDeg = _angleOffset.Value;
         _settings.MedianFilterEnabled = _medianCheck.Checked;

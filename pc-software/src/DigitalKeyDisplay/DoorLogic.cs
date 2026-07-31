@@ -31,13 +31,13 @@ public static class DoorLogic
     public const double SensingBoundaryM = 3.0;
     public const double HalfAngleDeg = 45.0;
 
-    public static DoorDecision Evaluate(bool online, double distanceM, double angleDeg, uint tagId, int? expectedFourBitId)
+    public static DoorDecision Evaluate(bool online, double distanceM, double angleDeg, int keyIdentityId, int? allowedKeyId)
     {
         if (!online)
             return Decision(RangeZone.Offline, false, false, false, "等待信标", "闭锁 · 等待定位数据", Color.FromArgb(100, 116, 139));
 
-        var identityMatched = expectedFourBitId.HasValue &&
-            (tagId & 0x0F) == (uint)(expectedFourBitId.Value & 0x0F);
+        var identityMatched = allowedKeyId.HasValue &&
+            (keyIdentityId & 0x0F) == (allowedKeyId.Value & 0x0F);
         if (Math.Abs(angleDeg) > HalfAngleDeg)
             return Decision(RangeZone.OutsideAngle, identityMatched, false, false, "正面 ±45°之外", "闭锁 · 超出有效角度", Color.FromArgb(100, 116, 139));
 

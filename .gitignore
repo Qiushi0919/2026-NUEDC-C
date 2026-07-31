@@ -26,3 +26,6 @@ logs/
 Thumbs.db
 .DS_Store
 *~
+
+# Local machine shortcut (contains an absolute installation path)
+启动数字钥匙软件.lnk

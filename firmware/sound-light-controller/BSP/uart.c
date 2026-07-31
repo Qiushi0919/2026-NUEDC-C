@@ -375,6 +375,7 @@ static void DigitalKey_UpdateWelcomeDecision(void)
 {
     bool isAuthenticatedWelcome =
         (g_digitalKeyAuthResult == DIGITAL_KEY_AUTH_PASSED) &&
+        ((g_digitalKeyRemoteId & 0x0FU) == (g_dipSwitchHexValue & 0x0FU)) &&
         (g_digitalKeyZone == DIGITAL_KEY_ZONE_WELCOME);
 
     if (!g_digitalKeyWelcomeConfirmed)
@@ -431,6 +432,7 @@ static void DigitalKey_UpdateUnlockDecision(void)
 {
     bool isAuthenticatedUnlock =
         (g_digitalKeyAuthResult == DIGITAL_KEY_AUTH_PASSED) &&
+        ((g_digitalKeyRemoteId & 0x0FU) == (g_dipSwitchHexValue & 0x0FU)) &&
         (g_digitalKeyZone == DIGITAL_KEY_ZONE_UNLOCK);
 
     if (!g_digitalKeyUnlockConfirmed)

@@ -7,7 +7,7 @@ public sealed class RadarControl : Control
     public double DistanceM { get; set; }
     public double AngleDeg { get; set; }
     public bool HasPosition { get; set; }
-    public DoorDecision Decision { get; set; } = DoorLogic.Evaluate(false, 0, 0, 0, 0);
+    public DoorDecision Decision { get; set; } = DoorLogic.Evaluate(false, 0, 0, 0, null);
     public string TagText { get; set; } = "等待信标";
 
     public RadarControl()

@@ -4,13 +4,13 @@ namespace DigitalKeyLab;
 
 public sealed class AppSettings
 {
-    public int ExpectedFourBitId { get; set; }
+    public int KeyIdentityId { get; set; }
     public decimal DistanceOffsetM { get; set; }
     public decimal AngleOffsetDeg { get; set; }
     public bool MedianFilterEnabled { get; set; } = true;
     public bool SoundEnabled { get; set; } = true;
     public bool AutoConnect { get; set; } = true;
-    public string PreferredPort { get; set; } = "COM8";
+    public string PreferredPort { get; set; } = "COM22";
     public string PreferredControlPort { get; set; } = "COM1";
 
     private static string SettingsPath => Path.Combine(
@@ -22,9 +22,19 @@ public sealed class AppSettings
     {
         try
         {
-            return File.Exists(SettingsPath)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath)) ?? new AppSettings()
-                : new AppSettings();
+            if (!File.Exists(SettingsPath))
+                return new AppSettings();
+
+            var json = File.ReadAllText(SettingsPath);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty(nameof(KeyIdentityId), out _) &&
+                document.RootElement.TryGetProperty("ExpectedFourBitId", out var legacyId) &&
+                legacyId.TryGetInt32(out var value))
+            {
+                settings.KeyIdentityId = value;
+            }
+            return settings;
         }
         catch
         {

@@ -76,30 +76,29 @@ var h = parser.Append(heartbeat).Single();
 Expect(h.Kind == FrameKind.Heartbeat, "Heartbeat command not recognized");
 Expect(h.AnchorId == 0x000012D5, "Heartbeat anchor ID mismatch");
 
-var unlocked = DoorLogic.Evaluate(true, 0.8, 0, 0xAAA1, 1);
+var unlocked = DoorLogic.Evaluate(true, 0.8, 0, 1, 1);
 Expect(unlocked.Unlocked && unlocked.LightOn && unlocked.IdentityMatched, "Unlock decision mismatch");
-var welcome = DoorLogic.Evaluate(true, 1.5, 10, 0xAAA1, 1);
+var welcome = DoorLogic.Evaluate(true, 1.5, 10, 1, 1);
 Expect(!welcome.Unlocked && welcome.LightOn && welcome.Zone == RangeZone.Welcome, "Welcome decision mismatch");
-var sensing = DoorLogic.Evaluate(true, 2.5, -20, 0xAAA1, 1);
+var sensing = DoorLogic.Evaluate(true, 2.5, -20, 1, 1);
 Expect(!sensing.Unlocked && !sensing.LightOn && sensing.Zone == RangeZone.Sensing, "Sensing decision mismatch");
-var outside = DoorLogic.Evaluate(true, 3.1, 0, 0xAAA1, 1);
+var outside = DoorLogic.Evaluate(true, 3.1, 0, 1, 1);
 Expect(outside.Zone == RangeZone.OutsideRange, "Outside-range decision mismatch");
-var wrongId = DoorLogic.Evaluate(true, 0.5, 0, 0xAAA2, 1);
+var wrongId = DoorLogic.Evaluate(true, 0.5, 0, 2, 1);
 Expect(!wrongId.IdentityMatched && !wrongId.Unlocked && !wrongId.LightOn, "Wrong-ID safety mismatch");
-var wrongAngle = DoorLogic.Evaluate(true, 0.5, 46, 0xAAA1, 1);
+var wrongAngle = DoorLogic.Evaluate(true, 0.5, 46, 1, 1);
 Expect(wrongAngle.Zone == RangeZone.OutsideAngle && !wrongAngle.Unlocked, "Angle boundary mismatch");
 
-for (var expectedId = 0; expectedId <= 15; expectedId++)
+for (var keyIdentityId = 0; keyIdentityId <= 15; keyIdentityId++)
 {
-    var matchingTagId = 0xABCDEF00u + (uint)expectedId;
-    var matching = DoorLogic.Evaluate(true, 0.5, 0, matchingTagId, expectedId);
-    Expect(matching.IdentityMatched && matching.Unlocked, $"Four-bit ID {expectedId} should match");
-    var different = DoorLogic.Evaluate(true, 0.5, 0, matchingTagId, (expectedId + 1) & 0xF);
-    Expect(!different.IdentityMatched && !different.Unlocked, $"Four-bit ID {expectedId} should reject a different setting");
+    var matching = DoorLogic.Evaluate(true, 0.5, 0, keyIdentityId, keyIdentityId);
+    Expect(matching.IdentityMatched && matching.Unlocked, $"Key ID {keyIdentityId} should match the DIP allowed ID");
+    var different = DoorLogic.Evaluate(true, 0.5, 0, keyIdentityId, (keyIdentityId + 1) & 0xF);
+    Expect(!different.IdentityMatched && !different.Unlocked, $"Key ID {keyIdentityId} should be rejected by a different DIP allowed ID");
 }
 
-var noExpectedId = DoorLogic.Evaluate(true, 0.5, 0, 0xAAA5, null);
-Expect(!noExpectedId.IdentityMatched && !noExpectedId.Unlocked, "Missing DIP ID must keep the lock closed");
+var noAllowedId = DoorLogic.Evaluate(true, 0.5, 0, 5, null);
+Expect(!noAllowedId.IdentityMatched && !noAllowedId.Unlocked, "Missing DIP allowed ID must keep the lock closed");
 
 var idReportExpected = Hex("AA 55 01 10 00 01 05 6E C3");
 var idReportBuilt = DigitalKeyControlProtocol.BuildIdReport(0, 5);
