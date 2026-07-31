@@ -62,6 +62,7 @@ public sealed class MainForm : Form
     private bool _blinkOn;
     private bool _autoConnectEligible;
     private bool _autoConnectControlEligible;
+    private readonly string? _demoScenario;
     private uint? _stableTagId;
     private uint? _candidateTagId;
     private int _candidateTagCount;
@@ -78,8 +79,11 @@ public sealed class MainForm : Form
     private static readonly TimeSpan DipIdTimeout = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan ControlStatusInterval = TimeSpan.FromMilliseconds(100);
 
-    public MainForm()
+    public MainForm(string? demoScenario = null)
     {
+        _demoScenario = string.IsNullOrWhiteSpace(demoScenario)
+            ? null
+            : demoScenario.Trim().ToLowerInvariant();
         Text = "C题数字钥匙实验系统 · 基站定位 + 蓝牙声光/DIP";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1100, 620);
@@ -97,8 +101,17 @@ public sealed class MainForm : Form
         RefreshPorts();
         ApplyOfflineState();
 
-        _uiTimer.Start();
-        _blinkTimer.Start();
+        if (_demoScenario is null)
+        {
+            _uiTimer.Start();
+            _blinkTimer.Start();
+        }
+        else
+        {
+            _soundCheck.Checked = false;
+            _recordCheck.Checked = false;
+            _autoConnectCheck.Checked = false;
+        }
     }
 
     private void BuildUi()
@@ -502,6 +515,11 @@ public sealed class MainForm : Form
         FormClosing += (_, _) => Shutdown();
         Shown += (_, _) =>
         {
+            if (_demoScenario is not null)
+            {
+                BeginInvoke(new Action(() => ApplyDemoScenario(_demoScenario)));
+                return;
+            }
             if (!_autoConnectCheck.Checked)
                 return;
             BeginInvoke(new Action(() =>
@@ -882,6 +900,63 @@ public sealed class MainForm : Form
         _lastEventKey = _decision.EventKey;
     }
 
+    private void ApplyDemoScenario(string scenario)
+    {
+        var (distanceM, angleDeg, allowedKeyId, title) = scenario switch
+        {
+            "unlock" => (0.65, -8.0, 5, "开锁区：身份通过并自动开锁"),
+            "welcome" => (1.50, 18.0, 5, "迎宾区：迎宾声光开启"),
+            "mismatch" => (0.75, 10.0, 10, "开锁区：身份不匹配并保持闭锁"),
+            _ => (2.60, -25.0, 5, "感应区：身份通过并等待靠近")
+        };
+        const int keyIdentityId = 5;
+        var now = DateTime.Now;
+        var frame = new AnchorFrame(
+            FrameKind.Position,
+            37,
+            1,
+            0x2001,
+            1,
+            1,
+            keyIdentityId,
+            (uint)Math.Round(distanceM * 100.0),
+            (short)Math.Round(angleDeg),
+            0,
+            0,
+            1,
+            true,
+            now,
+            Array.Empty<byte>());
+
+        _activeKeyIdentityId = keyIdentityId;
+        _expectedId.Value = keyIdentityId;
+        _latestFrame = frame;
+        _lastPositionAt = now;
+        _lastHeartbeatAt = now;
+        _latestDistance = distanceM;
+        _latestAngle = angleDeg;
+        _currentRate = 10.0;
+        _ignoredFrames = 0;
+
+        var decision = DoorLogic.Evaluate(true, distanceM, angleDeg, keyIdentityId, allowedKeyId);
+        UpdateLiveUi(frame, "演示", decision);
+        ApplyDecision(decision);
+
+        _allowedIdValue.Text = $"{FormatFourBit(allowedKeyId)}₂";
+        _allowedIdValue.ForeColor = Color.FromArgb(22, 163, 74);
+        _verifyValue.Text = decision.IdentityMatched ? "✓ 身份通过" : "✕ 身份不匹配";
+        _verifyValue.ForeColor = decision.IdentityMatched
+            ? Color.FromArgb(22, 163, 74)
+            : Color.FromArgb(220, 38, 38);
+        _rateValue.Text = "10.0 帧/秒";
+        _dataQualityValue.Text = "数据校验：正常 · 演示数据";
+        SetConnectionBadge("COM22 演示定位 · 10 Hz", Color.FromArgb(22, 163, 74));
+        _connectButton.Text = "断开连接";
+        _connectButton.BackColor = Color.FromArgb(220, 38, 38);
+        SetControlButton("断开蓝牙", Color.FromArgb(22, 163, 74), true);
+        PostEvent("演示场景", title);
+    }
+
     private void OnBlinkTick()
     {
         if (!_decision.LightOn)
@@ -1133,6 +1208,8 @@ public sealed class MainForm : Form
         _serial.Dispose();
         _controlLink.Dispose();
         _logger.Dispose();
+        if (_demoScenario is not null)
+            return;
         _settings.KeyIdentityId = _activeKeyIdentityId;
         _settings.DistanceOffsetM = _distanceOffset.Value;
         _settings.AngleOffsetDeg = _angleOffset.Value;

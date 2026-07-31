@@ -55,6 +55,26 @@ dotnet run --project .\pc-software\tests\ProtocolSmoke\ProtocolSmoke.csproj -c R
 
 固件工程入口位于 `firmware/sound-light-controller/keil/`，需要对应的 Keil/ARM 工具链编译。
 
+## 软件运行截图
+
+| 感应区：身份通过，等待靠近 | 迎宾区：迎宾声光开启 |
+| --- | --- |
+| <img src="Figs/软件运行-感应区.png" alt="数字钥匙位于感应区" width="600"> | <img src="Figs/软件运行-迎宾区.png" alt="数字钥匙位于迎宾区" width="600"> |
+| `2.60 m / -25.0°` | `1.50 m / +18.0°` |
+
+| 开锁区：身份通过，自动开锁 | 开锁区：身份不匹配，保持闭锁 |
+| --- | --- |
+| <img src="Figs/软件运行-开锁区.png" alt="数字钥匙位于开锁区并通过身份验证" width="600"> | <img src="Figs/软件运行-身份不匹配.png" alt="数字钥匙位于开锁区但身份不匹配" width="600"> |
+| `0.65 m / -8.0°` | `0.75 m / +10.0°` |
+
+以上截图使用隐藏的命令行演示参数生成，正式启动时不会显示演示模式按钮，也不会自动进入演示状态。例如：
+
+```powershell
+dotnet run --project .\pc-software\src\DigitalKeyDisplay\DigitalKeyDisplay.csproj -c Release -- --demo=unlock
+```
+
+可选场景为 `sensing`、`welcome`、`unlock` 和 `mismatch`。
+
 ## 实物与测试照片
 
 下列照片均保存在 `Figs/` 目录中。
