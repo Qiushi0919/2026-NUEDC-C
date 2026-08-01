@@ -10,6 +10,15 @@ static void Expect(bool condition, string message)
     if (!condition) throw new InvalidOperationException(message);
 }
 
+var defaultSettings = new AppSettings();
+Expect(defaultSettings.AutoConnect &&
+       defaultSettings.PreferredPort == AppSettings.AnchorPortName &&
+       defaultSettings.PreferredControlPort == AppSettings.ControlPortName,
+    "Fresh installations must default to base station COM22 and Bluetooth/control COM21");
+Expect(defaultSettings.OutputSmoothingWindow == 30 &&
+       defaultSettings.OutputSmoothingMethod == nameof(SmoothingMethod.Median),
+    "Fresh installations must default to 30-point median output smoothing");
+
 if (args.Length == 2 && args[0] == "--live")
 {
     var liveParser = new ProtocolParser();
@@ -99,6 +108,48 @@ for (var keyIdentityId = 0; keyIdentityId <= 15; keyIdentityId++)
 
 var noAllowedId = DoorLogic.Evaluate(true, 0.5, 0, 5, null);
 Expect(!noAllowedId.IdentityMatched && !noAllowedId.Unlocked, "Missing DIP allowed ID must keep the lock closed");
+
+var smoother = new MeasurementSmoother();
+Expect(smoother.WindowSize == 30 && smoother.Method == SmoothingMethod.Mean,
+    "Output smoother defaults must be 30-point mean");
+Expect(Math.Abs(MeasurementSmoother.EstimateDelaySeconds(30, 10) - 1.45) < 1e-9,
+    "30-point smoothing delay at 10Hz must be 1.45 seconds");
+Expect(double.IsNaN(MeasurementSmoother.EstimateDelaySeconds(30, 0)),
+    "Unknown frame rate must not report a fake smoothing delay");
+smoother.Configure(3, SmoothingMethod.Mean);
+smoother.Add(1, 10);
+smoother.Add(2, 20);
+var mean = smoother.Add(3, 30);
+Expect(Math.Abs(mean.DistanceM - 2) < 1e-9 && Math.Abs(mean.AngleDeg - 20) < 1e-9,
+    "Three-point mean smoothing mismatch");
+mean = smoother.Add(7, 70);
+Expect(Math.Abs(mean.DistanceM - 4) < 1e-9 && Math.Abs(mean.AngleDeg - 40) < 1e-9,
+    "Sliding mean must keep only the latest samples");
+smoother.Configure(3, SmoothingMethod.Median);
+var median = smoother.Current();
+Expect(Math.Abs(median.DistanceM - 3) < 1e-9 && Math.Abs(median.AngleDeg - 30) < 1e-9,
+    "Median smoothing mismatch");
+smoother.Configure(2, SmoothingMethod.Mean);
+mean = smoother.Current();
+Expect(mean.SampleCount == 2 && Math.Abs(mean.DistanceM - 5) < 1e-9 && Math.Abs(mean.AngleDeg - 50) < 1e-9,
+    "Changing the window must retain the newest samples");
+
+var angleCases = new (double Raw, double Expected)[]
+{
+    (-20, -25), (-15, -20), (-12.5, -15), (-10, -10),
+    (0, 0), (10, 10), (12.5, 15), (15, 20), (20, 25)
+};
+foreach (var (raw, expected) in angleCases)
+{
+    Expect(Math.Abs(CalibrationModel.CorrectAngle(raw) - expected) < 1e-9,
+        $"Piecewise angle mapping mismatch: raw={raw}, expected={expected}");
+}
+var calibrated = CalibrationModel.Apply(1.25, 12.5);
+Expect(Math.Abs(calibrated.DistanceM - 1.0) < 1e-9 && Math.Abs(calibrated.AngleDeg - 15.0) < 1e-9,
+    "Field calibration must apply -0.25m and y=2x-10 in the positive transition");
+var baseline = CalibrationModel.ApplyBaseline(1.25, 12.5);
+Expect(Math.Abs(baseline.DistanceM - 1.0) < 1e-9 && Math.Abs(baseline.AngleDeg - 12.5) < 1e-9,
+    "Baseline mode must retain -0.25m distance correction and the raw sensor angle");
 
 var idReportExpected = Hex("AA 55 01 10 00 01 05 6E C3");
 var idReportBuilt = DigitalKeyControlProtocol.BuildIdReport(0, 5);

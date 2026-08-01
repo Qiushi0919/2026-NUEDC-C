@@ -5,6 +5,8 @@
 *.user
 *.suo
 *.pdb
+*.pyc
+**/__pycache__/
 
 # Embedded build output
 firmware/**/keil/Objects/
@@ -22,6 +24,12 @@ logs/
 tmp/
 *.csv
 *.zip
+*.bak
+
+# Generated calibration reports and local published executables
+矫正数据集采集软件/analysis/output/
+矫正数据集采集软件/analysis/outputs/
+矫正数据集采集软件/发布版/
 
 # OS/editor files
 Thumbs.db

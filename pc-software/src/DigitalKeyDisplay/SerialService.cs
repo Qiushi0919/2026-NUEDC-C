@@ -67,8 +67,18 @@ public sealed class SerialService : IDisposable
         };
         port.DataReceived += OnDataReceived;
         port.ErrorReceived += OnErrorReceived;
-        port.Open();
-        _port = port;
+        try
+        {
+            port.Open();
+            _port = port;
+        }
+        catch
+        {
+            port.DataReceived -= OnDataReceived;
+            port.ErrorReceived -= OnErrorReceived;
+            port.Dispose();
+            throw;
+        }
     }
 
     public void Disconnect()

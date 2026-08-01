@@ -9,6 +9,9 @@
     <Compile Include="..\..\src\DigitalKeyDisplay\Protocol.cs" Link="Protocol.cs" />
     <Compile Include="..\..\src\DigitalKeyDisplay\DoorLogic.cs" Link="DoorLogic.cs" />
     <Compile Include="..\..\src\DigitalKeyDisplay\DigitalKeyControlProtocol.cs" Link="DigitalKeyControlProtocol.cs" />
+    <Compile Include="..\..\src\DigitalKeyDisplay\MeasurementSmoother.cs" Link="MeasurementSmoother.cs" />
+    <Compile Include="..\..\src\DigitalKeyDisplay\CalibrationModel.cs" Link="CalibrationModel.cs" />
+    <Compile Include="..\..\src\DigitalKeyDisplay\AppSettings.cs" Link="AppSettings.cs" />
     <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
   </ItemGroup>

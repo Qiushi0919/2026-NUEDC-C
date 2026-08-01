@@ -1,0 +1,53 @@
+namespace DigitalKeyLab;
+
+public readonly record struct CalibratedMeasurement(double DistanceM, double AngleDeg);
+
+/// <summary>
+/// Field calibration confirmed by on-site testing.
+/// Distance converts the anchor center distance to the required displayed
+/// distance. Angle uses a continuous symmetric piecewise-linear mapping.
+/// </summary>
+public static class CalibrationModel
+{
+    public const int Version = 2;
+    public const string DisplayName = "场地分段校准 v2";
+    public const double DistanceCorrectionM = 0.25;
+
+    public static CalibratedMeasurement Apply(double rawCenterDistanceM, double rawAzimuthDeg)
+    {
+        Validate(rawCenterDistanceM, rawAzimuthDeg);
+        return new CalibratedMeasurement(
+            Math.Max(0, rawCenterDistanceM - DistanceCorrectionM),
+            CorrectAngle(rawAzimuthDeg));
+    }
+
+    public static CalibratedMeasurement ApplyBaseline(double rawCenterDistanceM, double rawAzimuthDeg)
+    {
+        Validate(rawCenterDistanceM, rawAzimuthDeg);
+        return new CalibratedMeasurement(
+            Math.Max(0, rawCenterDistanceM - DistanceCorrectionM),
+            rawAzimuthDeg);
+    }
+
+    public static double CorrectAngle(double rawAzimuthDeg)
+    {
+        if (!double.IsFinite(rawAzimuthDeg))
+            throw new ArgumentOutOfRangeException(nameof(rawAzimuthDeg), "Angle input must be finite.");
+
+        if (rawAzimuthDeg < -15)
+            return rawAzimuthDeg - 5;
+        if (rawAzimuthDeg < -10)
+            return 2 * rawAzimuthDeg + 10;
+        if (rawAzimuthDeg <= 10)
+            return rawAzimuthDeg;
+        if (rawAzimuthDeg <= 15)
+            return 2 * rawAzimuthDeg - 10;
+        return rawAzimuthDeg + 5;
+    }
+
+    private static void Validate(double rawCenterDistanceM, double rawAzimuthDeg)
+    {
+        if (!double.IsFinite(rawCenterDistanceM) || !double.IsFinite(rawAzimuthDeg))
+            throw new ArgumentOutOfRangeException(nameof(rawCenterDistanceM), "Calibration inputs must be finite.");
+    }
+}

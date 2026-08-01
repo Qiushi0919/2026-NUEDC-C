@@ -11,6 +11,7 @@ public sealed class MainForm : Form
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly Queue<double> _distanceWindow = new();
     private readonly Queue<double> _angleWindow = new();
+    private readonly MeasurementSmoother _outputSmoother = new();
     private readonly Stopwatch _rateWatch = Stopwatch.StartNew();
     private readonly System.Windows.Forms.Timer _uiTimer = new() { Interval = 100 };
     private readonly System.Windows.Forms.Timer _blinkTimer = new() { Interval = 420 };
@@ -49,6 +50,10 @@ public sealed class MainForm : Form
     private readonly NumericUpDown _distanceOffset = new();
     private readonly NumericUpDown _angleOffset = new();
     private readonly CheckBox _medianCheck = new();
+    private readonly CheckBox _calibrationModelCheck = new();
+    private readonly NumericUpDown _smoothingWindow = new();
+    private readonly ComboBox _smoothingMethod = new();
+    private readonly Label _smoothingHint = SmallLabel("预计延时：等待帧率");
 
     private AnchorFrame? _latestFrame;
     private DoorDecision _decision = DoorLogic.Evaluate(false, 0, 0, 0, null);
@@ -72,12 +77,20 @@ public sealed class MainForm : Form
     private DateTime _lastDipIdAt = DateTime.MinValue;
     private DateTime _lastControlStatusAt = DateTime.MinValue;
     private DateTime _lastControlErrorAt = DateTime.MinValue;
+    private DateTime _nextPortRefreshAt = DateTime.MinValue;
+    private DateTime _nextAnchorReconnectAt = DateTime.MinValue;
+    private DateTime _nextControlReconnectAt = DateTime.MinValue;
+    private DateTime _lastAnchorConnectErrorEventAt = DateTime.MinValue;
+    private DateTime _lastControlConnectErrorEventAt = DateTime.MinValue;
     private string _identitySourceMode = string.Empty;
     private ControlZone _lastSentControlZone = ControlZone.None;
     private bool _lastSentControlHadKey;
 
     private static readonly TimeSpan DipIdTimeout = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan ControlStatusInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan ReconnectInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan PortRefreshInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ReconnectErrorEventInterval = TimeSpan.FromSeconds(10);
 
     public MainForm(string? demoScenario = null)
     {
@@ -201,6 +214,7 @@ public sealed class MainForm : Form
         _portCombo.Width = 76;
         _portCombo.DropDownStyle = ComboBoxStyle.DropDownList;
         _portCombo.Font = new Font(Font, FontStyle.Bold);
+        _portCombo.Enabled = false;
         panel.Controls.Add(_portCombo);
 
         var refresh = ToolbarButton("刷新", 56);
@@ -229,8 +243,9 @@ public sealed class MainForm : Form
         _recordCheck.Margin = new Padding(7, 7, 3, 0);
         panel.Controls.Add(_recordCheck);
 
-        _autoConnectCheck.Text = "启动自动连接";
+        _autoConnectCheck.Text = "固定端口自动重连";
         _autoConnectCheck.AutoSize = true;
+        _autoConnectCheck.Enabled = false;
         _autoConnectCheck.Margin = new Padding(7, 7, 3, 0);
         panel.Controls.Add(_autoConnectCheck);
 
@@ -242,9 +257,10 @@ public sealed class MainForm : Form
         panel.Controls.Add(_connectionStatus);
 
         panel.Controls.Add(ToolbarLabel("蓝牙"));
-        _controlPortCombo.Width = 64;
+        _controlPortCombo.Width = 76;
         _controlPortCombo.DropDownStyle = ComboBoxStyle.DropDownList;
         _controlPortCombo.Font = new Font(Font, FontStyle.Bold);
+        _controlPortCombo.Enabled = false;
         panel.Controls.Add(_controlPortCombo);
 
         _controlConnectButton.Text = "连接蓝牙";
@@ -396,7 +412,7 @@ public sealed class MainForm : Form
 
     private Control BuildCalibrationCard()
     {
-        var card = Card("定位校准", 104, out var body);
+        var card = Card("定位校准与滤波", 132, out var body);
         _distanceOffset.Minimum = -2;
         _distanceOffset.Maximum = 2;
         _distanceOffset.DecimalPlaces = 2;
@@ -409,15 +425,24 @@ public sealed class MainForm : Form
         _angleOffset.Increment = 0.5m;
         _angleOffset.Width = 68;
 
-        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 2, Padding = new Padding(7, 2, 7, 2) };
+        _smoothingWindow.Minimum = 1;
+        _smoothingWindow.Maximum = MeasurementSmoother.MaximumWindowSize;
+        _smoothingWindow.Width = 68;
+
+        _smoothingMethod.DropDownStyle = ComboBoxStyle.DropDownList;
+        _smoothingMethod.Width = 72;
+        _smoothingMethod.Items.AddRange(new object[] { "均值", "中值" });
+
+        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 3, Padding = new Padding(7, 2, 7, 2) };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 28));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 33));
+        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 33));
+        grid.RowStyles.Add(new RowStyle(SizeType.Percent, 34));
 
         grid.Controls.Add(SmallLabel("距离修正"), 0, 0);
         grid.Controls.Add(_distanceOffset, 1, 0);
@@ -433,11 +458,26 @@ public sealed class MainForm : Form
         grid.Controls.Add(_medianCheck, 0, 1);
         grid.SetColumnSpan(_medianCheck, 2);
 
-        var threshold = SmallLabel("固定边界：1.00 / 2.00 / 3.00 m；有效角度 ±45°");
+        _calibrationModelCheck.Text = "场地畸变校准";
+        _calibrationModelCheck.AutoSize = true;
+        _calibrationModelCheck.Margin = new Padding(3, 5, 3, 0);
+        grid.Controls.Add(_calibrationModelCheck, 2, 1);
+        grid.SetColumnSpan(_calibrationModelCheck, 2);
+
+        var threshold = SmallLabel("v2 · 距离-0.25m");
         threshold.ForeColor = Color.FromArgb(2, 132, 199);
         threshold.Font = new Font("Microsoft YaHei UI", 8.5f, FontStyle.Bold);
-        grid.Controls.Add(threshold, 2, 1);
-        grid.SetColumnSpan(threshold, 4);
+        grid.Controls.Add(threshold, 4, 1);
+        grid.SetColumnSpan(threshold, 2);
+
+        grid.Controls.Add(SmallLabel("输出平滑"), 0, 2);
+        grid.Controls.Add(_smoothingWindow, 1, 2);
+        grid.Controls.Add(SmallLabel("点"), 2, 2);
+        grid.Controls.Add(SmallLabel("统计方式"), 3, 2);
+        grid.Controls.Add(_smoothingMethod, 4, 2);
+        _smoothingHint.ForeColor = Color.FromArgb(2, 132, 199);
+        _smoothingHint.Font = new Font("Microsoft YaHei UI", 8.5f, FontStyle.Bold);
+        grid.Controls.Add(_smoothingHint, 5, 2);
         body.Controls.Add(grid);
         return card;
     }
@@ -494,7 +534,7 @@ public sealed class MainForm : Form
         _serial.ErrorOccurred += error =>
         {
             if (IsHandleCreated && !IsDisposed)
-                BeginInvoke(new Action(() => PostEvent("串口错误", error)));
+                BeginInvoke(new Action(() => HandleAnchorConnectionError(error)));
         };
         _controlLink.DipIdReceived += id =>
         {
@@ -504,14 +544,17 @@ public sealed class MainForm : Form
         _controlLink.ErrorOccurred += error =>
         {
             if (IsHandleCreated && !IsDisposed)
-                BeginInvoke(new Action(() => PostEvent("蓝牙错误", error)));
+                BeginInvoke(new Action(() => HandleControlConnectionError(error)));
         };
         _uiTimer.Tick += (_, _) => OnUiTick();
         _blinkTimer.Tick += (_, _) => OnBlinkTick();
         _expectedId.ValueChanged += (_, _) => UpdateExpectedIdPreview();
-        _distanceOffset.ValueChanged += (_, _) => RecomputeCurrent();
-        _angleOffset.ValueChanged += (_, _) => RecomputeCurrent();
-        _medianCheck.CheckedChanged += (_, _) => RecomputeCurrent();
+        _distanceOffset.ValueChanged += (_, _) => ResetOutputSmoothingAndRecompute();
+        _angleOffset.ValueChanged += (_, _) => ResetOutputSmoothingAndRecompute();
+        _medianCheck.CheckedChanged += (_, _) => ResetOutputSmoothingAndRecompute();
+        _calibrationModelCheck.CheckedChanged += (_, _) => ResetOutputSmoothingAndRecompute();
+        _smoothingWindow.ValueChanged += (_, _) => UpdateOutputSmoothingConfiguration();
+        _smoothingMethod.SelectedIndexChanged += (_, _) => UpdateOutputSmoothingConfiguration();
         FormClosing += (_, _) => Shutdown();
         Shown += (_, _) =>
         {
@@ -520,15 +563,7 @@ public sealed class MainForm : Form
                 BeginInvoke(new Action(() => ApplyDemoScenario(_demoScenario)));
                 return;
             }
-            if (!_autoConnectCheck.Checked)
-                return;
-            BeginInvoke(new Action(() =>
-            {
-                if (_autoConnectEligible && _portCombo.Items.Count > 0)
-                    ConnectSelectedPort();
-                if (_autoConnectControlEligible && _controlPortCombo.Items.Count > 0)
-                    ConnectControlPort();
-            }));
+            BeginInvoke(new Action(() => MaintainFixedConnections(DateTime.Now, force: true)));
         };
     }
 
@@ -540,65 +575,47 @@ public sealed class MainForm : Form
         _distanceOffset.Value = Math.Clamp(_settings.DistanceOffsetM, _distanceOffset.Minimum, _distanceOffset.Maximum);
         _angleOffset.Value = Math.Clamp(_settings.AngleOffsetDeg, _angleOffset.Minimum, _angleOffset.Maximum);
         _medianCheck.Checked = _settings.MedianFilterEnabled;
+        _calibrationModelCheck.Checked = _settings.CalibrationModelEnabled;
+        _smoothingWindow.Value = Math.Clamp(_settings.OutputSmoothingWindow,
+            (int)_smoothingWindow.Minimum, (int)_smoothingWindow.Maximum);
+        _smoothingMethod.SelectedIndex = string.Equals(_settings.OutputSmoothingMethod,
+            nameof(SmoothingMethod.Median), StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+        ConfigureOutputSmoother();
         _soundCheck.Checked = _settings.SoundEnabled;
-        _autoConnectCheck.Checked = _settings.AutoConnect;
+        _settings.AutoConnect = true;
+        _settings.PreferredPort = AppSettings.AnchorPortName;
+        _settings.PreferredControlPort = AppSettings.ControlPortName;
+        _autoConnectCheck.Checked = true;
     }
 
     private void RefreshPorts()
     {
-        var selected = _serial.IsConnected
-            ? _serial.PortName
-            : _portCombo.SelectedItem?.ToString() ?? _settings.PreferredPort;
-        var controlSelected = _controlLink.IsConnected
-            ? _controlLink.PortName
-            : _controlPortCombo.SelectedItem?.ToString() ?? _settings.PreferredControlPort;
         var devices = SerialService.GetPortDevices();
-        var ports = devices.Select(device => device.PortName).ToArray();
         _portCombo.Items.Clear();
         _controlPortCombo.Items.Clear();
-        _portCombo.Items.AddRange(ports);
-        _controlPortCombo.Items.AddRange(ports);
-        if (ports.Length == 0)
-        {
-            SetConnectionBadge("未发现串口", Color.FromArgb(220, 38, 38));
-            SetControlButton("无蓝牙串口", Color.FromArgb(100, 116, 139), false);
-            return;
-        }
+        _portCombo.Items.Add(AppSettings.AnchorPortName);
+        _controlPortCombo.Items.Add(AppSettings.ControlPortName);
+        _portCombo.SelectedIndex = 0;
+        _controlPortCombo.SelectedIndex = 0;
 
-        var selectedDevice = devices.FirstOrDefault(device =>
-            device.PortName.Equals(selected, StringComparison.OrdinalIgnoreCase));
-        var usbCandidate = devices.FirstOrDefault(device => device.IsUsb)
-            ?? devices.FirstOrDefault(device => PortNumber(device.PortName) > 6 && !device.IsBluetooth);
-        var preferred = selectedDevice?.PortName ?? usbCandidate?.PortName ?? ports[0];
-        var preferredDevice = devices.First(device =>
-            device.PortName.Equals(preferred, StringComparison.OrdinalIgnoreCase));
-        _autoConnectEligible = preferredDevice.IsUsb || PortNumber(preferred) > 6;
-        _portCombo.SelectedItem = preferred;
-        var selectedControlDevice = devices.FirstOrDefault(device =>
-            !device.PortName.Equals(preferred, StringComparison.OrdinalIgnoreCase) &&
-            device.PortName.Equals(controlSelected, StringComparison.OrdinalIgnoreCase));
-        var bluetoothCandidate = devices.FirstOrDefault(device =>
-            device.IsBluetooth && !device.PortName.Equals(preferred, StringComparison.OrdinalIgnoreCase));
-        var preferredControlDevice = selectedControlDevice?.IsBluetooth == true
-            ? selectedControlDevice
-            : bluetoothCandidate ?? selectedControlDevice
-                ?? devices.FirstOrDefault(device => !device.PortName.Equals(preferred, StringComparison.OrdinalIgnoreCase));
-        var preferredControl = preferredControlDevice?.PortName;
-        _autoConnectControlEligible = preferredControl is not null &&
-            devices.Any(device => device.PortName.Equals(preferredControl, StringComparison.OrdinalIgnoreCase) && device.IsBluetooth);
-        if (preferredControl is not null)
-            _controlPortCombo.SelectedItem = preferredControl;
+        _autoConnectEligible = devices.Any(device =>
+            device.PortName.Equals(AppSettings.AnchorPortName, StringComparison.OrdinalIgnoreCase));
+        _autoConnectControlEligible = devices.Any(device =>
+            device.PortName.Equals(AppSettings.ControlPortName, StringComparison.OrdinalIgnoreCase));
 
         if (!_serial.IsConnected)
         {
             SetConnectionBadge(
-                _autoConnectEligible ? $"待连接 · {preferred}" : "未发现USB串口 · 请检查CH340",
-                _autoConnectEligible ? Color.FromArgb(100, 116, 139) : Color.FromArgb(220, 38, 38));
+                _autoConnectEligible
+                    ? $"正在连接 · {AppSettings.AnchorPortName}"
+                    : $"等待接入 · {AppSettings.AnchorPortName}",
+                _autoConnectEligible ? Color.FromArgb(2, 132, 199) : Color.FromArgb(245, 158, 11));
         }
         if (!_controlLink.IsConnected)
-            SetControlButton(preferredControl is null ? "无蓝牙串口" : "连接蓝牙",
-                preferredControl is null ? Color.FromArgb(100, 116, 139) : Color.FromArgb(124, 58, 237),
-                preferredControl is not null);
+            SetControlButton(
+                _autoConnectControlEligible ? "正在连接" : "等待COM21",
+                _autoConnectControlEligible ? Color.FromArgb(124, 58, 237) : Color.FromArgb(245, 158, 11),
+                true);
     }
 
     private void ToggleConnection()
@@ -609,13 +626,11 @@ public sealed class MainForm : Form
             ConnectSelectedPort();
     }
 
-    private void ConnectSelectedPort()
+    private void ConnectSelectedPort(bool automatic = false)
     {
-        if (_portCombo.SelectedItem is not string portName)
-        {
-            RefreshPorts();
+        const string portName = AppSettings.AnchorPortName;
+        if (_serial.IsConnected)
             return;
-        }
         if (_controlLink.IsConnected &&
             portName.Equals(_controlLink.PortName, StringComparison.OrdinalIgnoreCase))
         {
@@ -627,7 +642,7 @@ public sealed class MainForm : Form
         {
             _serial.Connect(portName, 115200);
             ResetIdentityFilter();
-            _settings.PreferredPort = portName;
+            _settings.PreferredPort = AppSettings.AnchorPortName;
             _connectButton.Text = "断开连接";
             _connectButton.BackColor = Color.FromArgb(220, 38, 38);
             SetConnectionBadge($"已连接 {portName} · 等待信标", Color.FromArgb(2, 132, 199));
@@ -640,8 +655,12 @@ public sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            SetConnectionBadge($"连接失败 · {portName}", Color.FromArgb(220, 38, 38));
-            PostEvent("连接失败", ex.Message);
+            SetConnectionBadge($"自动重连中 · {portName}", Color.FromArgb(245, 158, 11));
+            if (!automatic || DateTime.Now - _lastAnchorConnectErrorEventAt >= ReconnectErrorEventInterval)
+            {
+                _lastAnchorConnectErrorEventAt = DateTime.Now;
+                PostEvent("基站重连", $"{portName} · {ex.Message}");
+            }
         }
     }
 
@@ -668,13 +687,11 @@ public sealed class MainForm : Form
             ConnectControlPort();
     }
 
-    private void ConnectControlPort()
+    private void ConnectControlPort(bool automatic = false)
     {
-        if (_controlPortCombo.SelectedItem is not string portName)
-        {
-            RefreshPorts();
+        const string portName = AppSettings.ControlPortName;
+        if (_controlLink.IsConnected)
             return;
-        }
         if (_serial.IsConnected &&
             portName.Equals(_serial.PortName, StringComparison.OrdinalIgnoreCase))
         {
@@ -685,7 +702,7 @@ public sealed class MainForm : Form
         try
         {
             _controlLink.Connect(portName);
-            _settings.PreferredControlPort = portName;
+            _settings.PreferredControlPort = AppSettings.ControlPortName;
             _dipAllowedId = null;
             _lastDipIdAt = DateTime.MinValue;
             _lastControlStatusAt = DateTime.MinValue;
@@ -697,8 +714,12 @@ public sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            SetControlButton("连接失败", Color.FromArgb(220, 38, 38), true);
-            PostEvent("蓝牙失败", $"{portName} · {ex.Message}");
+            SetControlButton("自动重连中", Color.FromArgb(245, 158, 11), true);
+            if (!automatic || DateTime.Now - _lastControlConnectErrorEventAt >= ReconnectErrorEventInterval)
+            {
+                _lastControlConnectErrorEventAt = DateTime.Now;
+                PostEvent("蓝牙重连", $"{portName} · {ex.Message}");
+            }
         }
     }
 
@@ -719,6 +740,7 @@ public sealed class MainForm : Form
     private void OnUiTick()
     {
         var now = DateTime.Now;
+        MaintainFixedConnections(now);
         if (_lastPositionAt != DateTime.MinValue && now - _lastPositionAt > TimeSpan.FromMilliseconds(850))
         {
             ApplyOfflineState();
@@ -737,10 +759,58 @@ public sealed class MainForm : Form
             _framesSinceRate = 0;
             _rateWatch.Restart();
             _rateValue.Text = $"{_currentRate:F1} 帧/秒";
+            UpdateSmoothingDelayHint();
         }
 
         UpdateIdentitySource(now);
         SendControlStatusIfDue(now);
+    }
+
+    private void MaintainFixedConnections(DateTime now, bool force = false)
+    {
+        if (_demoScenario is not null)
+            return;
+
+        if (force || now >= _nextPortRefreshAt)
+        {
+            _nextPortRefreshAt = now + PortRefreshInterval;
+            RefreshPorts();
+        }
+
+        if (!_serial.IsConnected && (force || now >= _nextAnchorReconnectAt))
+        {
+            _nextAnchorReconnectAt = now + ReconnectInterval;
+            ConnectSelectedPort(automatic: true);
+        }
+
+        if (!_controlLink.IsConnected && (force || now >= _nextControlReconnectAt))
+        {
+            _nextControlReconnectAt = now + ReconnectInterval;
+            ConnectControlPort(automatic: true);
+        }
+    }
+
+    private void HandleAnchorConnectionError(string error)
+    {
+        PostEvent("串口错误", $"{error} · 将自动重连 {AppSettings.AnchorPortName}");
+        _serial.Disconnect();
+        _logger.Stop();
+        _nextAnchorReconnectAt = DateTime.Now + ReconnectInterval;
+        _connectButton.Text = "连接基站";
+        _connectButton.BackColor = Color.FromArgb(2, 132, 199);
+        SetConnectionBadge($"自动重连中 · {AppSettings.AnchorPortName}", Color.FromArgb(245, 158, 11));
+        ApplyOfflineState();
+    }
+
+    private void HandleControlConnectionError(string error)
+    {
+        PostEvent("蓝牙错误", $"{error} · 将自动重连 {AppSettings.ControlPortName}");
+        _controlLink.Disconnect();
+        _dipAllowedId = null;
+        _lastDipIdAt = DateTime.MinValue;
+        _nextControlReconnectAt = DateTime.Now + ReconnectInterval;
+        SetControlButton("自动重连中", Color.FromArgb(245, 158, 11), true);
+        UpdateIdentitySource(DateTime.Now, true);
     }
 
     private void HandleFrame(AnchorFrame frame, string mode)
@@ -769,13 +839,13 @@ public sealed class MainForm : Form
         _framesSinceRate++;
         EnqueueSample(_distanceWindow, frame.DistanceM, 5);
         EnqueueSample(_angleWindow, frame.AzimuthDeg, 5);
-        RecomputeCurrent(mode);
+        RecomputeCurrent(mode, appendOutputSample: true);
 
         if (_serial.IsConnected)
             SetConnectionBadge($"{_serial.PortName} 实时定位 · {_currentRate:F0} Hz", Color.FromArgb(22, 163, 74));
     }
 
-    private void RecomputeCurrent(string? mode = null)
+    private void RecomputeCurrent(string? mode = null, bool appendOutputSample = false)
     {
         if (_latestFrame is null || _lastPositionAt == DateTime.MinValue)
             return;
@@ -784,8 +854,17 @@ public sealed class MainForm : Form
 
         var baseDistance = _medianCheck.Checked ? Median(_distanceWindow) : _latestFrame.DistanceM;
         var baseAngle = _medianCheck.Checked ? Median(_angleWindow) : _latestFrame.AzimuthDeg;
-        _latestDistance = Math.Max(0, baseDistance + (double)_distanceOffset.Value);
-        _latestAngle = baseAngle + (double)_angleOffset.Value;
+        var calibrated = _calibrationModelCheck.Checked
+            ? CalibrationModel.Apply(baseDistance, baseAngle)
+            : CalibrationModel.ApplyBaseline(baseDistance, baseAngle);
+        var correctedDistance = Math.Max(0, calibrated.DistanceM + (double)_distanceOffset.Value);
+        var correctedAngle = calibrated.AngleDeg + (double)_angleOffset.Value;
+        ConfigureOutputSmoother();
+        var smoothed = appendOutputSample || _outputSmoother.SampleCount == 0
+            ? _outputSmoother.Add(correctedDistance, correctedAngle)
+            : _outputSmoother.Current();
+        _latestDistance = smoothed.DistanceM;
+        _latestAngle = smoothed.AngleDeg;
         var allowedKeyId = CurrentAllowedKeyId(DateTime.Now);
         var nextDecision = DoorLogic.Evaluate(true, _latestDistance, _latestAngle,
             _activeKeyIdentityId, allowedKeyId);
@@ -808,9 +887,12 @@ public sealed class MainForm : Form
         _xValue.Text = $"X = {x:+0.00;-0.00;0.00} m";
         _yValue.Text = $"Y = {y:0.00} m";
         _lastTimeValue.Text = $"{frame.ReceivedAt:HH:mm:ss.fff} · {mode}";
-        _dataQualityValue.Text = _ignoredFrames == 0
+        var qualityText = _ignoredFrames == 0
             ? "数据校验：正常"
             : $"数据校验：正常 · 已过滤 {_ignoredFrames} 个瞬时异常帧";
+        var smoothingText = SelectedSmoothingMethod() == SmoothingMethod.Median ? "中值" : "均值";
+        var calibrationText = _calibrationModelCheck.Checked ? "场地畸变校准" : "原始角度";
+        _dataQualityValue.Text = $"{qualityText} · {calibrationText} · 平滑：{smoothingText} {_outputSmoother.SampleCount}/{_outputSmoother.WindowSize}点";
         _dataQualityValue.ForeColor = frame.ChecksumValid ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38);
 
         _radar.DistanceM = _latestDistance;
@@ -872,6 +954,7 @@ public sealed class MainForm : Form
 
     private void ApplyOfflineState()
     {
+        ResetMeasurementFilters();
         _lastPositionAt = DateTime.MinValue;
         _decision = DoorLogic.Evaluate(false, 0, 0, _activeKeyIdentityId, CurrentAllowedKeyId(DateTime.Now));
         _radar.HasPosition = false;
@@ -1105,7 +1188,7 @@ public sealed class MainForm : Form
             if (now - _lastControlErrorAt > TimeSpan.FromSeconds(2))
             {
                 _lastControlErrorAt = now;
-                PostEvent("蓝牙发送", ex.Message);
+                HandleControlConnectionError($"发送失败：{ex.Message}");
             }
         }
     }
@@ -1158,6 +1241,7 @@ public sealed class MainForm : Form
         if (_candidateTagCount < 3)
             return false;
 
+        ResetMeasurementFilters();
         _stableTagId = tagId;
         _candidateTagId = null;
         _candidateTagCount = 0;
@@ -1171,7 +1255,54 @@ public sealed class MainForm : Form
         _candidateTagId = null;
         _candidateTagCount = 0;
         _ignoredFrames = 0;
+        ResetMeasurementFilters();
     }
+
+    private void ResetMeasurementFilters()
+    {
+        _distanceWindow.Clear();
+        _angleWindow.Clear();
+        _outputSmoother.Clear();
+    }
+
+    private void ResetOutputSmoothingAndRecompute()
+    {
+        _outputSmoother.Clear();
+        RecomputeCurrent(appendOutputSample: true);
+    }
+
+    private void UpdateOutputSmoothingConfiguration()
+    {
+        ConfigureOutputSmoother();
+        RecomputeCurrent();
+    }
+
+    private void ConfigureOutputSmoother()
+    {
+        var windowSize = _smoothingWindow.Value < 1
+            ? MeasurementSmoother.DefaultWindowSize
+            : (int)_smoothingWindow.Value;
+        _outputSmoother.Configure(windowSize, SelectedSmoothingMethod());
+        UpdateSmoothingDelayHint();
+    }
+
+    private void UpdateSmoothingDelayHint()
+    {
+        if (_currentRate <= 0)
+        {
+            _smoothingHint.Text = "预计延时：等待帧率";
+            return;
+        }
+
+        var outputDelay = MeasurementSmoother.EstimateDelaySeconds(_outputSmoother.WindowSize, _currentRate);
+        var prefilterDelay = _medianCheck.Checked
+            ? MeasurementSmoother.EstimateDelaySeconds(5, _currentRate)
+            : 0;
+        _smoothingHint.Text = $"总延时≈{outputDelay + prefilterDelay:F2}s @{_currentRate:F1}Hz";
+    }
+
+    private SmoothingMethod SelectedSmoothingMethod() =>
+        _smoothingMethod.SelectedIndex == 1 ? SmoothingMethod.Median : SmoothingMethod.Mean;
 
     private void PostEvent(string category, string message)
     {
@@ -1213,9 +1344,16 @@ public sealed class MainForm : Form
         _settings.KeyIdentityId = _activeKeyIdentityId;
         _settings.DistanceOffsetM = _distanceOffset.Value;
         _settings.AngleOffsetDeg = _angleOffset.Value;
+        _settings.CalibrationModelEnabled = _calibrationModelCheck.Checked;
+        _settings.CalibrationModelVersion = CalibrationModel.Version;
         _settings.MedianFilterEnabled = _medianCheck.Checked;
+        _settings.OutputSmoothingWindow = (int)_smoothingWindow.Value;
+        _settings.OutputSmoothingMethod = SelectedSmoothingMethod().ToString();
+        _settings.OutputSmoothingVersion = 1;
         _settings.SoundEnabled = _soundCheck.Checked;
-        _settings.AutoConnect = _autoConnectCheck.Checked;
+        _settings.AutoConnect = true;
+        _settings.PreferredPort = AppSettings.AnchorPortName;
+        _settings.PreferredControlPort = AppSettings.ControlPortName;
         _settings.Save();
     }
 
