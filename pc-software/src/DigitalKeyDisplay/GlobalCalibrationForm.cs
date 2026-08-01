@@ -9,6 +9,7 @@ public sealed class GlobalCalibrationForm : Form
     private readonly Label _rawAngle = MetricValue();
     private readonly Label _calibratedDistance = MetricValue();
     private readonly Label _calibratedAngle = MetricValue();
+    private readonly Button _clearAllButton = new();
     private int _activeRowIndex = -1;
 
     public GlobalCalibrationForm(
@@ -25,11 +26,7 @@ public sealed class GlobalCalibrationForm : Form
         Font = new Font("Microsoft YaHei UI", 9f);
         TopMost = true;
         BuildUi();
-        Shown += (_, _) =>
-        {
-            ClearGridSelection();
-            ScrollToActiveRow();
-        };
+        Shown += (_, _) => ClearGridSelection();
     }
 
     public void UpdateMeasurement(
@@ -79,18 +76,30 @@ public sealed class GlobalCalibrationForm : Form
         var metrics = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 4,
+            ColumnCount = 5,
             RowCount = 1,
             BackColor = Color.White,
             Padding = new Padding(6),
             Margin = new Padding(0, 0, 0, 8)
         };
         for (var index = 0; index < 4; index++)
-            metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 21.5f));
+        metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14));
         metrics.Controls.Add(Metric("基站原始距离", _rawDistance), 0, 0);
         metrics.Controls.Add(Metric("基站原始角度", _rawAngle), 1, 0);
         metrics.Controls.Add(Metric("全局校准后距离", _calibratedDistance), 2, 0);
         metrics.Controls.Add(Metric("全局校准后角度", _calibratedAngle), 3, 0);
+        _clearAllButton.Text = "一键清零";
+        _clearAllButton.Dock = DockStyle.Fill;
+        _clearAllButton.Margin = new Padding(10, 17, 6, 17);
+        _clearAllButton.FlatStyle = FlatStyle.Flat;
+        _clearAllButton.FlatAppearance.BorderSize = 0;
+        _clearAllButton.BackColor = Color.FromArgb(220, 38, 38);
+        _clearAllButton.ForeColor = Color.White;
+        _clearAllButton.Font = new Font(Font, FontStyle.Bold);
+        _clearAllButton.Cursor = Cursors.Hand;
+        _clearAllButton.Click += (_, _) => ClearAllAdjustments();
+        metrics.Controls.Add(_clearAllButton, 4, 0);
         root.Controls.Add(metrics, 0, 0);
 
         ConfigureGrid();
@@ -201,7 +210,17 @@ public sealed class GlobalCalibrationForm : Form
                 : angleGroup % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 252);
         }
         ClearGridSelection();
-        ScrollToActiveRow();
+    }
+
+    private void ClearAllAdjustments()
+    {
+        GlobalCalibrationModel.ClearAll(_adjustments);
+        for (var rowIndex = 0; rowIndex < _grid.Rows.Count; rowIndex++)
+        {
+            _grid.Rows[rowIndex].Cells[2].Value = FormatDistanceCorrection(0);
+            _grid.Rows[rowIndex].Cells[7].Value = FormatAngleCorrection(0);
+        }
+        _adjustmentsChanged();
     }
 
     private void AddTextColumn(string name, string header, int width) =>
@@ -264,12 +283,5 @@ public sealed class GlobalCalibrationForm : Form
     {
         _grid.ClearSelection();
         _grid.CurrentCell = null;
-    }
-
-    private void ScrollToActiveRow()
-    {
-        if (_activeRowIndex < 0 || _activeRowIndex >= _grid.Rows.Count || !_grid.IsHandleCreated)
-            return;
-        _grid.FirstDisplayedScrollingRowIndex = Math.Max(0, _activeRowIndex - 2);
     }
 }

@@ -12,6 +12,7 @@ public sealed class MainForm : Form
     private readonly Queue<double> _distanceWindow = new();
     private readonly Queue<double> _angleWindow = new();
     private readonly MeasurementSmoother _outputSmoother = new();
+    private readonly ValidFrameAverager _validFrameAverager = new(6);
     private readonly Stopwatch _rateWatch = Stopwatch.StartNew();
     private readonly System.Windows.Forms.Timer _uiTimer = new() { Interval = 100 };
     private readonly System.Windows.Forms.Timer _blinkTimer = new() { Interval = 420 };
@@ -62,6 +63,8 @@ public sealed class MainForm : Form
     private DateTime _lastHeartbeatAt = DateTime.MinValue;
     private double _latestDistance;
     private double _latestAngle;
+    private double _latestRawDistance;
+    private double _latestRawAngle;
     private double _latestGlobalDistance;
     private double _latestGlobalAngle;
     private int _framesSinceRate;
@@ -855,16 +858,23 @@ public sealed class MainForm : Form
             return;
         }
 
+        var now = DateTime.Now;
+        _lastPositionAt = now;
+        _lastHeartbeatAt = now;
+        if (!_validFrameAverager.TryAdd(
+                frame.DistanceM, frame.AzimuthDeg, out var averagedRaw))
+            return;
+
         _latestFrame = frame;
-        _lastPositionAt = DateTime.Now;
-        _lastHeartbeatAt = DateTime.Now;
+        _latestRawDistance = averagedRaw.DistanceM;
+        _latestRawAngle = averagedRaw.AngleDeg;
         _framesSinceRate++;
         var globalCalibrated = GlobalCalibrationModel.Apply(
-            frame.DistanceM, frame.AzimuthDeg, _settings.GlobalCalibrationAdjustments);
+            _latestRawDistance, _latestRawAngle, _settings.GlobalCalibrationAdjustments);
         _latestGlobalDistance = globalCalibrated.DistanceM;
         _latestGlobalAngle = globalCalibrated.AngleDeg;
         _globalCalibrationForm?.UpdateMeasurement(
-            frame.DistanceM, frame.AzimuthDeg, globalCalibrated);
+            _latestRawDistance, _latestRawAngle, globalCalibrated);
         EnqueueSample(_distanceWindow, _latestGlobalDistance, 5);
         EnqueueSample(_angleWindow, _latestGlobalAngle, 5);
         RecomputeCurrent(mode, appendOutputSample: true);
@@ -892,7 +902,7 @@ public sealed class MainForm : Form
             ? _outputSmoother.Add(correctedDistance, correctedAngle)
             : _outputSmoother.Current();
         _latestDistance = smoothed.DistanceM;
-        _latestAngle = smoothed.AngleDeg;
+        _latestAngle = CalibrationModel.ClampDisplayAngle(smoothed.AngleDeg);
         var allowedKeyId = CurrentAllowedKeyId(DateTime.Now);
         var nextDecision = DoorLogic.Evaluate(true, _latestDistance, _latestAngle,
             _activeKeyIdentityId, allowedKeyId);
@@ -920,7 +930,7 @@ public sealed class MainForm : Form
             : $"数据校验：正常 · 已过滤 {_ignoredFrames} 个瞬时异常帧";
         var smoothingText = SelectedSmoothingMethod() == SmoothingMethod.Median ? "中值" : "均值";
         var calibrationText = _calibrationModelCheck.Checked ? "场地畸变校准" : "原始角度";
-        _dataQualityValue.Text = $"{qualityText} · {calibrationText} · 平滑：{smoothingText} {_outputSmoother.SampleCount}/{_outputSmoother.WindowSize}点";
+        _dataQualityValue.Text = $"{qualityText} · 6帧原始均值 · {calibrationText} · 平滑：{smoothingText} {_outputSmoother.SampleCount}/{_outputSmoother.WindowSize}点";
         _dataQualityValue.ForeColor = frame.ChecksumValid ? Color.FromArgb(22, 163, 74) : Color.FromArgb(220, 38, 38);
 
         _radar.DistanceM = _latestDistance;
@@ -982,6 +992,7 @@ public sealed class MainForm : Form
 
     private void ApplyOfflineState()
     {
+        _validFrameAverager.Reset();
         ResetMeasurementFilters();
         _lastPositionAt = DateTime.MinValue;
         _globalCalibrationForm?.SetUnavailable();
@@ -1045,6 +1056,8 @@ public sealed class MainForm : Form
         _latestFrame = frame;
         _lastPositionAt = now;
         _lastHeartbeatAt = now;
+        _latestRawDistance = distanceM;
+        _latestRawAngle = angleDeg;
         _latestGlobalDistance = distanceM;
         _latestGlobalAngle = angleDeg;
         _latestDistance = distanceM;
@@ -1277,6 +1290,7 @@ public sealed class MainForm : Form
             return false;
 
         ResetMeasurementFilters();
+        _validFrameAverager.Reset();
         _stableTagId = tagId;
         _candidateTagId = null;
         _candidateTagCount = 0;
@@ -1290,6 +1304,7 @@ public sealed class MainForm : Form
         _candidateTagId = null;
         _candidateTagCount = 0;
         _ignoredFrames = 0;
+        _validFrameAverager.Reset();
         ResetMeasurementFilters();
     }
 
@@ -1384,11 +1399,11 @@ public sealed class MainForm : Form
             DateTime.Now - _lastPositionAt <= TimeSpan.FromMilliseconds(850))
         {
             var calibrated = GlobalCalibrationModel.Apply(
-                _latestFrame.DistanceM,
-                _latestFrame.AzimuthDeg,
+                _latestRawDistance,
+                _latestRawAngle,
                 _settings.GlobalCalibrationAdjustments);
             _globalCalibrationForm.UpdateMeasurement(
-                _latestFrame.DistanceM, _latestFrame.AzimuthDeg, calibrated);
+                _latestRawDistance, _latestRawAngle, calibrated);
         }
         else
         {
@@ -1405,8 +1420,8 @@ public sealed class MainForm : Form
             return;
 
         var calibrated = GlobalCalibrationModel.Apply(
-            _latestFrame.DistanceM,
-            _latestFrame.AzimuthDeg,
+            _latestRawDistance,
+            _latestRawAngle,
             _settings.GlobalCalibrationAdjustments);
         _latestGlobalDistance = calibrated.DistanceM;
         _latestGlobalAngle = calibrated.AngleDeg;
@@ -1415,7 +1430,7 @@ public sealed class MainForm : Form
         EnqueueSample(_angleWindow, _latestGlobalAngle, 5);
         RecomputeCurrent("实机", appendOutputSample: true);
         _globalCalibrationForm?.UpdateMeasurement(
-            _latestFrame.DistanceM, _latestFrame.AzimuthDeg, calibrated);
+            _latestRawDistance, _latestRawAngle, calibrated);
     }
 
     private void Shutdown()

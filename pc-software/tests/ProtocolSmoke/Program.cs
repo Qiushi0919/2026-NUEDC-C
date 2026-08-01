@@ -76,6 +76,41 @@ Expect(!outsideGlobalRange.HasMatchingRange &&
 Expect(GlobalCalibrationModel.AddCorrection(0, 0.01m) == 0.01m &&
        GlobalCalibrationModel.AddCorrection(0.01m, -0.1m) == -0.09m,
     "Global calibration must preserve one-centimeter distance adjustments");
+var clearableAdjustments = GlobalCalibrationModel.CreateDefaultAdjustments();
+clearableAdjustments[0].DistanceCorrectionM = 1.25m;
+clearableAdjustments[^1].AngleCorrectionDeg = -3.5m;
+GlobalCalibrationModel.ClearAll(clearableAdjustments);
+Expect(clearableAdjustments.All(item =>
+        item.DistanceCorrectionM == 0 && item.AngleCorrectionDeg == 0),
+    "One-click global calibration reset must clear every saved correction");
+
+Expect(CalibrationModel.ClampDisplayAngle(52.0) == 45.0 &&
+       CalibrationModel.ClampDisplayAngle(-51.0) == -45.0 &&
+       CalibrationModel.ClampDisplayAngle(12.5) == 12.5,
+    "Final displayed angle must be clamped to plus or minus 45 degrees");
+
+var frameAverager = new ValidFrameAverager(6);
+AveragedRawMeasurement averagedRaw = default;
+for (var index = 0; index < 5; index++)
+{
+    Expect(!frameAverager.TryAdd(index + 1, -5 + index * 2, out averagedRaw),
+        $"Valid frame {index + 1} must wait for a complete six-frame average");
+}
+Expect(frameAverager.TryAdd(6, 5, out averagedRaw) &&
+       averagedRaw.SourceFrameCount == 6 &&
+       Math.Abs(averagedRaw.DistanceM - 3.5) < 1e-9 &&
+       Math.Abs(averagedRaw.AngleDeg) < 1e-9,
+    "Six valid frames must produce their arithmetic mean for distance and angle");
+Expect(!frameAverager.TryAdd(10, 10, out averagedRaw),
+    "A new averaging group must start after each six-frame output");
+frameAverager.Reset();
+for (var index = 1; index <= 5; index++)
+    Expect(!frameAverager.TryAdd(2, 12, out averagedRaw),
+        $"Reset averaging frame {index} must wait for the sixth frame");
+Expect(frameAverager.TryAdd(2, 12, out averagedRaw) &&
+       Math.Abs(averagedRaw.DistanceM - 2) < 1e-9 &&
+       Math.Abs(averagedRaw.AngleDeg - 12) < 1e-9,
+    "The sixth valid frame after reset must output the new group mean");
 
 if (args.Length == 2 && args[0] == "--live")
 {

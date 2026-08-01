@@ -110,6 +110,15 @@ public static class GlobalCalibrationModel
     public static decimal AddCorrection(decimal current, decimal delta) =>
         ClampCorrection(current + delta);
 
+    public static void ClearAll(IList<GlobalCalibrationAdjustment> adjustments)
+    {
+        foreach (var adjustment in adjustments)
+        {
+            adjustment.DistanceCorrectionM = 0;
+            adjustment.AngleCorrectionDeg = 0;
+        }
+    }
+
     public static string FormatAngleRange(int index)
     {
         var range = AngleRanges[index];

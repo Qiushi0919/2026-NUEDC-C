@@ -48,6 +48,13 @@ public static class CalibrationModel
         return rawAzimuthDeg + 5;
     }
 
+    public static double ClampDisplayAngle(double angleDeg)
+    {
+        if (!double.IsFinite(angleDeg))
+            throw new ArgumentOutOfRangeException(nameof(angleDeg), "Display angle must be finite.");
+        return Math.Clamp(angleDeg, -45.0, 45.0);
+    }
+
     private static void Validate(double rawCenterDistanceM, double rawAzimuthDeg)
     {
         if (!double.IsFinite(rawCenterDistanceM) || !double.IsFinite(rawAzimuthDeg))
