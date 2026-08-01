@@ -464,7 +464,7 @@ public sealed class MainForm : Form
         grid.Controls.Add(_calibrationModelCheck, 2, 1);
         grid.SetColumnSpan(_calibrationModelCheck, 2);
 
-        var threshold = SmallLabel("v2 · 距离-0.25m");
+        var threshold = SmallLabel("v3 · 距离=基站中心距");
         threshold.ForeColor = Color.FromArgb(2, 132, 199);
         threshold.Font = new Font("Microsoft YaHei UI", 8.5f, FontStyle.Bold);
         grid.Controls.Add(threshold, 4, 1);

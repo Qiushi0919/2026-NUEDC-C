@@ -145,11 +145,11 @@ foreach (var (raw, expected) in angleCases)
         $"Piecewise angle mapping mismatch: raw={raw}, expected={expected}");
 }
 var calibrated = CalibrationModel.Apply(1.25, 12.5);
-Expect(Math.Abs(calibrated.DistanceM - 1.0) < 1e-9 && Math.Abs(calibrated.AngleDeg - 15.0) < 1e-9,
-    "Field calibration must apply -0.25m and y=2x-10 in the positive transition");
+Expect(Math.Abs(calibrated.DistanceM - 1.25) < 1e-9 && Math.Abs(calibrated.AngleDeg - 15.0) < 1e-9,
+    "Field calibration must preserve center distance and apply y=2x-10 in the positive transition");
 var baseline = CalibrationModel.ApplyBaseline(1.25, 12.5);
-Expect(Math.Abs(baseline.DistanceM - 1.0) < 1e-9 && Math.Abs(baseline.AngleDeg - 12.5) < 1e-9,
-    "Baseline mode must retain -0.25m distance correction and the raw sensor angle");
+Expect(Math.Abs(baseline.DistanceM - 1.25) < 1e-9 && Math.Abs(baseline.AngleDeg - 12.5) < 1e-9,
+    "Baseline mode must preserve center distance and the raw sensor angle");
 
 var idReportExpected = Hex("AA 55 01 10 00 01 05 6E C3");
 var idReportBuilt = DigitalKeyControlProtocol.BuildIdReport(0, 5);

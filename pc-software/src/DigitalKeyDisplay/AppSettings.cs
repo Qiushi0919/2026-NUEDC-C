@@ -47,8 +47,8 @@ public sealed class AppSettings
                 !modelVersion.TryGetInt32(out var savedVersion) || savedVersion < CalibrationModel.Version;
             if (needsCalibrationMigration)
             {
-                // Version 2 replaces the old 45-point model with the field-confirmed
-                // -0.25 m distance correction and piecewise angle mapping. Keep the
+                // Version 3 displays the base-station center distance directly and
+                // retains the field-confirmed piecewise angle mapping. Keep the
                 // numeric controls as post-calibration fine trims.
                 settings.DistanceOffsetM = 0;
                 settings.AngleOffsetDeg = 0;

@@ -16,8 +16,9 @@ public readonly record struct ProcessedMeasurement(
 }
 
 /// <summary>
-/// Mirrors the deployed main-program pipeline used for the new collection:
-/// five-point median prefilter, field piecewise calibration v2, then 30-point median output.
+/// Preserves the collector's original subject-distance dataset convention:
+/// five-point median prefilter, center-to-subject distance conversion,
+/// field angle calibration, then 30-point median output.
 /// </summary>
 public sealed class MeasurementProcessor
 {
@@ -37,7 +38,10 @@ public sealed class MeasurementProcessor
         Enqueue(_rawAngles, rawAzimuthDeg, PrefilterWindowSize);
         var prefilterDistance = Median(_rawDistances);
         var prefilterAngle = Median(_rawAngles);
-        var calibrated = CalibrationModel.Apply(prefilterDistance, prefilterAngle);
+        var centerCalibrated = CalibrationModel.Apply(prefilterDistance, prefilterAngle);
+        var calibrated = new CalibratedMeasurement(
+            Math.Max(0, centerCalibrated.DistanceM - CalibrationModel.DistanceCorrectionM),
+            centerCalibrated.AngleDeg);
         var smoothed = _outputSmoother.Add(calibrated.DistanceM, calibrated.AngleDeg);
         return new ProcessedMeasurement(
             prefilterDistance,

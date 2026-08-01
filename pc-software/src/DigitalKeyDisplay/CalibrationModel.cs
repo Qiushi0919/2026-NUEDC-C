@@ -4,20 +4,23 @@ public readonly record struct CalibratedMeasurement(double DistanceM, double Ang
 
 /// <summary>
 /// Field calibration confirmed by on-site testing.
-/// Distance converts the anchor center distance to the required displayed
-/// distance. Angle uses a continuous symmetric piecewise-linear mapping.
+/// Distance preserves the base-station center distance. Angle uses a
+/// continuous symmetric piecewise-linear mapping.
 /// </summary>
 public static class CalibrationModel
 {
-    public const int Version = 2;
-    public const string DisplayName = "场地分段校准 v2";
+    public const int Version = 3;
+    public const string DisplayName = "场地畸变校准 v3";
+
+    // The collector retains this physical offset for its historical
+    // "subject distance" and "center distance" dataset columns.
     public const double DistanceCorrectionM = 0.25;
 
     public static CalibratedMeasurement Apply(double rawCenterDistanceM, double rawAzimuthDeg)
     {
         Validate(rawCenterDistanceM, rawAzimuthDeg);
         return new CalibratedMeasurement(
-            Math.Max(0, rawCenterDistanceM - DistanceCorrectionM),
+            Math.Max(0, rawCenterDistanceM),
             CorrectAngle(rawAzimuthDeg));
     }
 
@@ -25,7 +28,7 @@ public static class CalibrationModel
     {
         Validate(rawCenterDistanceM, rawAzimuthDeg);
         return new CalibratedMeasurement(
-            Math.Max(0, rawCenterDistanceM - DistanceCorrectionM),
+            Math.Max(0, rawCenterDistanceM),
             rawAzimuthDeg);
     }
 
