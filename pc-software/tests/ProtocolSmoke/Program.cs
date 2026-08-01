@@ -54,20 +54,28 @@ Expect(Math.Abs(globallyCalibrated.DistanceM - 1.45) < 1e-9 &&
        Math.Abs(globallyCalibrated.AngleDeg - 10.5) < 1e-9 &&
        globallyCalibrated.AngleRangeIndex == 6 && globallyCalibrated.DistanceRangeIndex == 2,
     "Global calibration must use the cell selected by raw distance and raw angle");
-var boundaryCalibrated = GlobalCalibrationModel.Apply(3.50, 45.0, globalAdjustments);
+var boundaryCalibrated = GlobalCalibrationModel.Apply(3.50, 50.0, globalAdjustments);
 Expect(Math.Abs(boundaryCalibrated.DistanceM - 3.40) < 1e-9 &&
-       Math.Abs(boundaryCalibrated.AngleDeg - 45.5) < 1e-9,
-    "Global calibration must include the final 45-degree and 3.50-meter boundaries");
+       Math.Abs(boundaryCalibrated.AngleDeg - 50.5) < 1e-9,
+    "Global calibration must include the final 50-degree and 3.50-meter boundaries");
+var negativeOuterBoundary = GlobalCalibrationModel.Apply(0.25, -50.0, globalAdjustments);
+Expect(negativeOuterBoundary.HasMatchingRange &&
+       negativeOuterBoundary.AngleRangeIndex == 0 &&
+       negativeOuterBoundary.DistanceRangeIndex == 0,
+    "Global calibration must include the negative 50-degree boundary");
 var nextRange = GlobalCalibrationModel.Apply(1.50, 20.0, globalAdjustments);
 Expect(Math.Abs(nextRange.DistanceM - 1.50) < 1e-9 &&
        Math.Abs(nextRange.AngleDeg - 20.0) < 1e-9 &&
        nextRange.AngleRangeIndex == 7 && nextRange.DistanceRangeIndex == 3,
     "Shared boundaries must belong to the range beginning at that boundary");
-var outsideGlobalRange = GlobalCalibrationModel.Apply(3.60, 46.0, globalAdjustments);
+var outsideGlobalRange = GlobalCalibrationModel.Apply(3.60, 51.0, globalAdjustments);
 Expect(!outsideGlobalRange.HasMatchingRange &&
        Math.Abs(outsideGlobalRange.DistanceM - 3.60) < 1e-9 &&
-       Math.Abs(outsideGlobalRange.AngleDeg - 46.0) < 1e-9,
+       Math.Abs(outsideGlobalRange.AngleDeg - 51.0) < 1e-9,
     "Measurements outside the configured grid must pass through unchanged");
+Expect(GlobalCalibrationModel.AddCorrection(0, 0.01m) == 0.01m &&
+       GlobalCalibrationModel.AddCorrection(0.01m, -0.1m) == -0.09m,
+    "Global calibration must preserve one-centimeter distance adjustments");
 
 if (args.Length == 2 && args[0] == "--live")
 {

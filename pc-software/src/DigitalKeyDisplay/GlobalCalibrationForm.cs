@@ -25,7 +25,11 @@ public sealed class GlobalCalibrationForm : Form
         Font = new Font("Microsoft YaHei UI", 9f);
         TopMost = true;
         BuildUi();
-        Shown += (_, _) => ClearGridSelection();
+        Shown += (_, _) =>
+        {
+            ClearGridSelection();
+            ScrollToActiveRow();
+        };
     }
 
     public void UpdateMeasurement(
@@ -115,16 +119,16 @@ public sealed class GlobalCalibrationForm : Form
         _grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _grid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-        _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(187, 247, 208);
+        _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
         _grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
 
         AddTextColumn("angleRange", "原始角度区间/°", 115);
         AddTextColumn("distanceRange", "原始距离区间/m", 125);
         AddTextColumn("distanceValue", "距离修正/m", 90);
-        AddButtonColumn("distanceMinusOne", "-1.0", 56);
         AddButtonColumn("distanceMinusPointOne", "-0.1", 56);
+        AddButtonColumn("distanceMinusPointZeroOne", "-0.01", 56);
+        AddButtonColumn("distancePlusPointZeroOne", "+0.01", 56);
         AddButtonColumn("distancePlusPointOne", "+0.1", 56);
-        AddButtonColumn("distancePlusOne", "+1.0", 56);
         AddTextColumn("angleValue", "角度修正/°", 90);
         AddButtonColumn("angleMinusOne", "-1.0", 56);
         AddButtonColumn("angleMinusPointOne", "-0.1", 56);
@@ -139,9 +143,9 @@ public sealed class GlobalCalibrationForm : Form
             var rowIndex = _grid.Rows.Add(
                 angleText,
                 GlobalCalibrationModel.FormatDistanceRange(adjustment.DistanceRangeIndex),
-                FormatCorrection(adjustment.DistanceCorrectionM),
-                "-1.0", "-0.1", "+0.1", "+1.0",
-                FormatCorrection(adjustment.AngleCorrectionDeg),
+                FormatDistanceCorrection(adjustment.DistanceCorrectionM),
+                "-0.1", "-0.01", "+0.01", "+0.1",
+                FormatAngleCorrection(adjustment.AngleCorrectionDeg),
                 "-1.0", "-0.1", "+0.1", "+1.0");
             _grid.Rows[rowIndex].Tag = adjustment;
         }
@@ -160,10 +164,10 @@ public sealed class GlobalCalibrationForm : Form
         var distance = false;
         switch (e.ColumnIndex)
         {
-            case 3: distance = true; delta = -1.0m; break;
-            case 4: distance = true; delta = -0.1m; break;
-            case 5: distance = true; delta = 0.1m; break;
-            case 6: distance = true; delta = 1.0m; break;
+            case 3: distance = true; delta = -0.1m; break;
+            case 4: distance = true; delta = -0.01m; break;
+            case 5: distance = true; delta = 0.01m; break;
+            case 6: distance = true; delta = 0.1m; break;
             case 8: delta = -1.0m; break;
             case 9: delta = -0.1m; break;
             case 10: delta = 0.1m; break;
@@ -175,13 +179,13 @@ public sealed class GlobalCalibrationForm : Form
         {
             adjustment.DistanceCorrectionM = GlobalCalibrationModel.AddCorrection(
                 adjustment.DistanceCorrectionM, delta);
-            _grid.Rows[e.RowIndex].Cells[2].Value = FormatCorrection(adjustment.DistanceCorrectionM);
+            _grid.Rows[e.RowIndex].Cells[2].Value = FormatDistanceCorrection(adjustment.DistanceCorrectionM);
         }
         else
         {
             adjustment.AngleCorrectionDeg = GlobalCalibrationModel.AddCorrection(
                 adjustment.AngleCorrectionDeg, delta);
-            _grid.Rows[e.RowIndex].Cells[7].Value = FormatCorrection(adjustment.AngleCorrectionDeg);
+            _grid.Rows[e.RowIndex].Cells[7].Value = FormatAngleCorrection(adjustment.AngleCorrectionDeg);
         }
         _adjustmentsChanged();
     }
@@ -193,10 +197,11 @@ public sealed class GlobalCalibrationForm : Form
             var row = _grid.Rows[index];
             var angleGroup = index / GlobalCalibrationModel.DistanceRanges.Count;
             row.DefaultCellStyle.BackColor = index == _activeRowIndex
-                ? Color.FromArgb(220, 252, 231)
+                ? Color.FromArgb(224, 242, 254)
                 : angleGroup % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 252);
         }
         ClearGridSelection();
+        ScrollToActiveRow();
     }
 
     private void AddTextColumn(string name, string header, int width) =>
@@ -249,12 +254,22 @@ public sealed class GlobalCalibrationForm : Form
         ForeColor = Color.FromArgb(15, 23, 42)
     };
 
-    private static string FormatCorrection(decimal value) =>
+    private static string FormatDistanceCorrection(decimal value) =>
+        value.ToString("+0.00;-0.00;0.00");
+
+    private static string FormatAngleCorrection(decimal value) =>
         value.ToString("+0.0;-0.0;0.0");
 
     private void ClearGridSelection()
     {
         _grid.ClearSelection();
         _grid.CurrentCell = null;
+    }
+
+    private void ScrollToActiveRow()
+    {
+        if (_activeRowIndex < 0 || _activeRowIndex >= _grid.Rows.Count || !_grid.IsHandleCreated)
+            return;
+        _grid.FirstDisplayedScrollingRowIndex = Math.Max(0, _activeRowIndex - 2);
     }
 }

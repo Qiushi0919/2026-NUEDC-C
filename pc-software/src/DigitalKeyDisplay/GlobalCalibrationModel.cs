@@ -30,7 +30,7 @@ public static class GlobalCalibrationModel
 
     public static IReadOnlyList<CalibrationInterval> AngleRanges { get; } = new[]
     {
-        new CalibrationInterval(-45, -40),
+        new CalibrationInterval(-50, -40),
         new CalibrationInterval(-40, -30),
         new CalibrationInterval(-30, -20),
         new CalibrationInterval(-20, -10),
@@ -39,7 +39,7 @@ public static class GlobalCalibrationModel
         new CalibrationInterval(10, 20),
         new CalibrationInterval(20, 30),
         new CalibrationInterval(30, 40),
-        new CalibrationInterval(40, 45, true)
+        new CalibrationInterval(40, 50, true)
     };
 
     public static IReadOnlyList<CalibrationInterval> DistanceRanges { get; } = new[]
@@ -133,6 +133,6 @@ public static class GlobalCalibrationModel
     }
 
     private static decimal ClampCorrection(decimal value) =>
-        Math.Clamp(decimal.Round(value, 1, MidpointRounding.AwayFromZero),
+        Math.Clamp(decimal.Round(value, 2, MidpointRounding.AwayFromZero),
             MinimumCorrection, MaximumCorrection);
 }
