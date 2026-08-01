@@ -109,6 +109,15 @@ export default function Home() {
         <div className="ambient ambient-two" />
         <div className="container hero-grid">
           <div className="hero-copy">
+            <div className="hero-logos" aria-label="华中科技大学与全国大学生电子设计竞赛">
+              <div className="hero-logo hero-logo-hust">
+                <img src={asset("/images/hust-logo.png")} alt="华中科技大学校徽" />
+              </div>
+              <span className="hero-logo-divider" aria-hidden="true" />
+              <div className="hero-logo hero-logo-nuedc">
+                <img src={asset("/images/nuedc-badge.png")} alt="全国大学生电子设计竞赛徽章" />
+              </div>
+            </div>
             <div className="event-badge">
               <span className="pulse" />
               2026 全国大学生电子设计竞赛 · C 题
@@ -122,6 +131,14 @@ export default function Home() {
               以 120° UWB 定位基站、数字钥匙信标、Windows 上位机和蓝牙声光门锁为核心，
               完成身份验证、距离与方位测量、分区判决以及自动开闭锁闭环。
             </p>
+            <div className="team-signature" aria-label="参赛队员">
+              <span>华中科技大学参赛队</span>
+              <strong>谢秋实 <em>队长</em></strong>
+              <i aria-hidden="true">·</i>
+              <strong>朱拓源</strong>
+              <i aria-hidden="true">·</i>
+              <strong>庞亚宸</strong>
+            </div>
             <div className="hero-actions">
               <a className="button primary" href="#features">观看功能演示 <span>↓</span></a>
               <a className="button secondary" href={asset("/downloads/C题_基于无线通信的数字钥匙实验系统.pdf")} target="_blank">查看原题 PDF</a>
@@ -325,7 +342,7 @@ export default function Home() {
 
       <footer>
         <div className="container footer-grid">
-          <div><strong>2026 电赛 C 题 · 数字钥匙实验系统</strong><p>UWB 定位 · 身份验证 · 蓝牙声光 · 智能门锁</p></div>
+          <div><strong>华中科技大学 · 2026 电赛 C 题</strong><p>谢秋实（队长） · 朱拓源 · 庞亚宸</p></div>
           <div><a href={repo} target="_blank" rel="noreferrer">项目仓库 ↗</a><a href="#top">返回顶部 ↑</a></div>
         </div>
       </footer>
