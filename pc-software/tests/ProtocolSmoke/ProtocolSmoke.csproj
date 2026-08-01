@@ -11,6 +11,7 @@
     <Compile Include="..\..\src\DigitalKeyDisplay\DigitalKeyControlProtocol.cs" Link="DigitalKeyControlProtocol.cs" />
     <Compile Include="..\..\src\DigitalKeyDisplay\MeasurementSmoother.cs" Link="MeasurementSmoother.cs" />
     <Compile Include="..\..\src\DigitalKeyDisplay\CalibrationModel.cs" Link="CalibrationModel.cs" />
+    <Compile Include="..\..\src\DigitalKeyDisplay\GlobalCalibrationModel.cs" Link="GlobalCalibrationModel.cs" />
     <Compile Include="..\..\src\DigitalKeyDisplay\AppSettings.cs" Link="AppSettings.cs" />
     <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />

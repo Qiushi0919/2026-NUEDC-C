@@ -1,6 +1,7 @@
 using DigitalKeyLab;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Text.Json;
 
 static byte[] Hex(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
     .Select(part => Convert.ToByte(part, 16)).ToArray();
@@ -18,6 +19,55 @@ Expect(defaultSettings.AutoConnect &&
 Expect(defaultSettings.OutputSmoothingWindow == 30 &&
        defaultSettings.OutputSmoothingMethod == nameof(SmoothingMethod.Median),
     "Fresh installations must default to 30-point median output smoothing");
+Expect(defaultSettings.GlobalCalibrationAdjustments.Count == 70 &&
+       defaultSettings.GlobalCalibrationAdjustments.All(item =>
+           item.DistanceCorrectionM == 0 && item.AngleCorrectionDeg == 0),
+    "Global calibration must provide 10 angle ranges x 7 distance ranges with zero defaults");
+defaultSettings.GlobalCalibrationAdjustments[0].DistanceCorrectionM = 1.5m;
+defaultSettings.GlobalCalibrationAdjustments[0].AngleCorrectionDeg = -2.2m;
+var restoredSettings = JsonSerializer.Deserialize<AppSettings>(
+    JsonSerializer.Serialize(defaultSettings))!;
+Expect(restoredSettings.GlobalCalibrationAdjustments.Count == 70 &&
+       restoredSettings.GlobalCalibrationAdjustments[0].DistanceCorrectionM == 1.5m &&
+       restoredSettings.GlobalCalibrationAdjustments[0].AngleCorrectionDeg == -2.2m,
+    "Global calibration corrections must survive settings serialization");
+
+var globalAdjustments = GlobalCalibrationModel.Normalize(new[]
+{
+    new GlobalCalibrationAdjustment
+    {
+        AngleRangeIndex = 6,
+        DistanceRangeIndex = 2,
+        DistanceCorrectionM = 0.2m,
+        AngleCorrectionDeg = -1.5m
+    },
+    new GlobalCalibrationAdjustment
+    {
+        AngleRangeIndex = 9,
+        DistanceRangeIndex = 6,
+        DistanceCorrectionM = -0.1m,
+        AngleCorrectionDeg = 0.5m
+    }
+});
+var globallyCalibrated = GlobalCalibrationModel.Apply(1.25, 12.0, globalAdjustments);
+Expect(Math.Abs(globallyCalibrated.DistanceM - 1.45) < 1e-9 &&
+       Math.Abs(globallyCalibrated.AngleDeg - 10.5) < 1e-9 &&
+       globallyCalibrated.AngleRangeIndex == 6 && globallyCalibrated.DistanceRangeIndex == 2,
+    "Global calibration must use the cell selected by raw distance and raw angle");
+var boundaryCalibrated = GlobalCalibrationModel.Apply(3.50, 45.0, globalAdjustments);
+Expect(Math.Abs(boundaryCalibrated.DistanceM - 3.40) < 1e-9 &&
+       Math.Abs(boundaryCalibrated.AngleDeg - 45.5) < 1e-9,
+    "Global calibration must include the final 45-degree and 3.50-meter boundaries");
+var nextRange = GlobalCalibrationModel.Apply(1.50, 20.0, globalAdjustments);
+Expect(Math.Abs(nextRange.DistanceM - 1.50) < 1e-9 &&
+       Math.Abs(nextRange.AngleDeg - 20.0) < 1e-9 &&
+       nextRange.AngleRangeIndex == 7 && nextRange.DistanceRangeIndex == 3,
+    "Shared boundaries must belong to the range beginning at that boundary");
+var outsideGlobalRange = GlobalCalibrationModel.Apply(3.60, 46.0, globalAdjustments);
+Expect(!outsideGlobalRange.HasMatchingRange &&
+       Math.Abs(outsideGlobalRange.DistanceM - 3.60) < 1e-9 &&
+       Math.Abs(outsideGlobalRange.AngleDeg - 46.0) < 1e-9,
+    "Measurements outside the configured grid must pass through unchanged");
 
 if (args.Length == 2 && args[0] == "--live")
 {

@@ -16,6 +16,8 @@ public sealed class AppSettings
     public int OutputSmoothingWindow { get; set; } = MeasurementSmoother.DefaultWindowSize;
     public string OutputSmoothingMethod { get; set; } = nameof(SmoothingMethod.Median);
     public int OutputSmoothingVersion { get; set; } = 1;
+    public List<GlobalCalibrationAdjustment> GlobalCalibrationAdjustments { get; set; } =
+        GlobalCalibrationModel.CreateDefaultAdjustments();
     public bool SoundEnabled { get; set; } = true;
     public bool AutoConnect { get; set; } = true;
     public string PreferredPort { get; set; } = AnchorPortName;
@@ -35,7 +37,12 @@ public sealed class AppSettings
 
             var json = File.ReadAllText(SettingsPath);
             var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            settings.GlobalCalibrationAdjustments = GlobalCalibrationModel.Normalize(
+                settings.GlobalCalibrationAdjustments);
             using var document = JsonDocument.Parse(json);
+            var needsGlobalCalibrationInitialization =
+                !document.RootElement.TryGetProperty(nameof(GlobalCalibrationAdjustments), out var globalCalibration) ||
+                globalCalibration.ValueKind != JsonValueKind.Array;
             if (!document.RootElement.TryGetProperty(nameof(KeyIdentityId), out _) &&
                 document.RootElement.TryGetProperty("ExpectedFourBitId", out var legacyId) &&
                 legacyId.TryGetInt32(out var value))
@@ -66,6 +73,8 @@ public sealed class AppSettings
                 settings.OutputSmoothingVersion = 1;
                 settings.Save();
             }
+            if (needsGlobalCalibrationInitialization)
+                settings.Save();
             return settings;
         }
         catch

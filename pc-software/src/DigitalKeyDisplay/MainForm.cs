@@ -27,6 +27,7 @@ public sealed class MainForm : Form
     private readonly RadarControl _radar = new();
     private readonly TableLayoutPanel _sidePanel = new();
     private readonly ListBox _eventList = new();
+    private readonly Button _globalCalibrationButton = new();
 
     private readonly Label _fourBitValue = ValueLabel(14f);
     private readonly Label _allowedIdValue = ValueLabel(12f);
@@ -61,6 +62,8 @@ public sealed class MainForm : Form
     private DateTime _lastHeartbeatAt = DateTime.MinValue;
     private double _latestDistance;
     private double _latestAngle;
+    private double _latestGlobalDistance;
+    private double _latestGlobalAngle;
     private int _framesSinceRate;
     private double _currentRate;
     private string _lastEventKey = string.Empty;
@@ -85,6 +88,7 @@ public sealed class MainForm : Form
     private string _identitySourceMode = string.Empty;
     private ControlZone _lastSentControlZone = ControlZone.None;
     private bool _lastSentControlHadKey;
+    private GlobalCalibrationForm? _globalCalibrationForm;
 
     private static readonly TimeSpan DipIdTimeout = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan ControlStatusInterval = TimeSpan.FromMilliseconds(100);
@@ -162,6 +166,23 @@ public sealed class MainForm : Form
         content.Controls.Add(BuildSidePanel(), 1, 0);
         root.Controls.Add(content, 0, 2);
         root.Controls.Add(BuildLogPanel(), 0, 3);
+
+        _globalCalibrationButton.Text = string.Empty;
+        _globalCalibrationButton.Size = new Size(22, 22);
+        _globalCalibrationButton.Location = new Point(
+            Math.Max(0, ClientSize.Width - 29),
+            Math.Max(0, ClientSize.Height - 29));
+        _globalCalibrationButton.Anchor = AnchorStyles.Right | AnchorStyles.Bottom;
+        _globalCalibrationButton.FlatStyle = FlatStyle.Flat;
+        _globalCalibrationButton.FlatAppearance.BorderSize = 0;
+        _globalCalibrationButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(21, 128, 61);
+        _globalCalibrationButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(20, 83, 45);
+        _globalCalibrationButton.BackColor = Color.FromArgb(34, 197, 94);
+        _globalCalibrationButton.Cursor = Cursors.Hand;
+        _globalCalibrationButton.TabStop = false;
+        _globalCalibrationButton.AccessibleName = "全局校准";
+        Controls.Add(_globalCalibrationButton);
+        _globalCalibrationButton.BringToFront();
     }
 
     private Control BuildHeader()
@@ -526,6 +547,7 @@ public sealed class MainForm : Form
         _connectButton.Click += (_, _) => ToggleConnection();
         _controlConnectButton.Click += (_, _) => ToggleControlConnection();
         _changeIdButton.Click += (_, _) => ApplyExpectedId();
+        _globalCalibrationButton.Click += (_, _) => OpenGlobalCalibration();
         _serial.FrameReceived += frame =>
         {
             if (IsHandleCreated && !IsDisposed)
@@ -837,8 +859,14 @@ public sealed class MainForm : Form
         _lastPositionAt = DateTime.Now;
         _lastHeartbeatAt = DateTime.Now;
         _framesSinceRate++;
-        EnqueueSample(_distanceWindow, frame.DistanceM, 5);
-        EnqueueSample(_angleWindow, frame.AzimuthDeg, 5);
+        var globalCalibrated = GlobalCalibrationModel.Apply(
+            frame.DistanceM, frame.AzimuthDeg, _settings.GlobalCalibrationAdjustments);
+        _latestGlobalDistance = globalCalibrated.DistanceM;
+        _latestGlobalAngle = globalCalibrated.AngleDeg;
+        _globalCalibrationForm?.UpdateMeasurement(
+            frame.DistanceM, frame.AzimuthDeg, globalCalibrated);
+        EnqueueSample(_distanceWindow, _latestGlobalDistance, 5);
+        EnqueueSample(_angleWindow, _latestGlobalAngle, 5);
         RecomputeCurrent(mode, appendOutputSample: true);
 
         if (_serial.IsConnected)
@@ -852,8 +880,8 @@ public sealed class MainForm : Form
 
         mode ??= "实机";
 
-        var baseDistance = _medianCheck.Checked ? Median(_distanceWindow) : _latestFrame.DistanceM;
-        var baseAngle = _medianCheck.Checked ? Median(_angleWindow) : _latestFrame.AzimuthDeg;
+        var baseDistance = _medianCheck.Checked ? Median(_distanceWindow) : _latestGlobalDistance;
+        var baseAngle = _medianCheck.Checked ? Median(_angleWindow) : _latestGlobalAngle;
         var calibrated = _calibrationModelCheck.Checked
             ? CalibrationModel.Apply(baseDistance, baseAngle)
             : CalibrationModel.ApplyBaseline(baseDistance, baseAngle);
@@ -956,6 +984,7 @@ public sealed class MainForm : Form
     {
         ResetMeasurementFilters();
         _lastPositionAt = DateTime.MinValue;
+        _globalCalibrationForm?.SetUnavailable();
         _decision = DoorLogic.Evaluate(false, 0, 0, _activeKeyIdentityId, CurrentAllowedKeyId(DateTime.Now));
         _radar.HasPosition = false;
         _radar.Decision = _decision;
@@ -1016,10 +1045,16 @@ public sealed class MainForm : Form
         _latestFrame = frame;
         _lastPositionAt = now;
         _lastHeartbeatAt = now;
+        _latestGlobalDistance = distanceM;
+        _latestGlobalAngle = angleDeg;
         _latestDistance = distanceM;
         _latestAngle = angleDeg;
         _currentRate = 10.0;
         _ignoredFrames = 0;
+        _globalCalibrationForm?.UpdateMeasurement(
+            distanceM,
+            angleDeg,
+            new GlobalCalibrationResult(distanceM, angleDeg, -1, -1));
 
         var decision = DoorLogic.Evaluate(true, distanceM, angleDeg, keyIdentityId, allowedKeyId);
         UpdateLiveUi(frame, "演示", decision);
@@ -1332,10 +1367,63 @@ public sealed class MainForm : Form
         Process.Start(new ProcessStartInfo("explorer.exe", folder) { UseShellExecute = true });
     }
 
+    private void OpenGlobalCalibration()
+    {
+        if (_globalCalibrationForm is { IsDisposed: false })
+        {
+            _globalCalibrationForm.Show();
+            _globalCalibrationForm.Activate();
+            return;
+        }
+
+        _globalCalibrationForm = new GlobalCalibrationForm(
+            _settings.GlobalCalibrationAdjustments,
+            SaveGlobalCalibrationAndRecompute);
+        _globalCalibrationForm.FormClosed += (_, _) => _globalCalibrationForm = null;
+        if (_latestFrame is not null && _lastPositionAt != DateTime.MinValue &&
+            DateTime.Now - _lastPositionAt <= TimeSpan.FromMilliseconds(850))
+        {
+            var calibrated = GlobalCalibrationModel.Apply(
+                _latestFrame.DistanceM,
+                _latestFrame.AzimuthDeg,
+                _settings.GlobalCalibrationAdjustments);
+            _globalCalibrationForm.UpdateMeasurement(
+                _latestFrame.DistanceM, _latestFrame.AzimuthDeg, calibrated);
+        }
+        else
+        {
+            _globalCalibrationForm.SetUnavailable();
+        }
+        _globalCalibrationForm.Show(this);
+    }
+
+    private void SaveGlobalCalibrationAndRecompute()
+    {
+        _settings.Save();
+        if (_latestFrame is null || _lastPositionAt == DateTime.MinValue ||
+            DateTime.Now - _lastPositionAt > TimeSpan.FromMilliseconds(850))
+            return;
+
+        var calibrated = GlobalCalibrationModel.Apply(
+            _latestFrame.DistanceM,
+            _latestFrame.AzimuthDeg,
+            _settings.GlobalCalibrationAdjustments);
+        _latestGlobalDistance = calibrated.DistanceM;
+        _latestGlobalAngle = calibrated.AngleDeg;
+        ResetMeasurementFilters();
+        EnqueueSample(_distanceWindow, _latestGlobalDistance, 5);
+        EnqueueSample(_angleWindow, _latestGlobalAngle, 5);
+        RecomputeCurrent("实机", appendOutputSample: true);
+        _globalCalibrationForm?.UpdateMeasurement(
+            _latestFrame.DistanceM, _latestFrame.AzimuthDeg, calibrated);
+    }
+
     private void Shutdown()
     {
         _uiTimer.Stop();
         _blinkTimer.Stop();
+        if (_globalCalibrationForm is { IsDisposed: false })
+            _globalCalibrationForm.Close();
         _serial.Dispose();
         _controlLink.Dispose();
         _logger.Dispose();
