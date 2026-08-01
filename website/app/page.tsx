@@ -32,6 +32,44 @@ const scenarios = [
   },
 ] as const;
 
+const featureVideos = [
+  {
+    requirement: "要求 1",
+    title: "钥匙身份广播与识别",
+    copy: "数字钥匙持续发送 4 位身份 ID，门锁在感应区完成接收、识别与显示。",
+    video: asset("/videos/feature-1.mp4"),
+    poster: asset("/videos/feature-1.jpg"),
+  },
+  {
+    requirement: "要求 3",
+    title: "距离与方位角实时定位",
+    copy: "上位机实时显示径向距离、方位角和平面位置，用于后续区域判决。",
+    video: asset("/videos/feature-2.mp4"),
+    poster: asset("/videos/feature-2.jpg"),
+  },
+  {
+    requirement: "要求 4",
+    title: "进入迎宾区声光提示",
+    copy: "身份验证通过的钥匙进入 1–2 m 迎宾区后，系统自动给出迎宾声光提示。",
+    video: asset("/videos/feature-3.mp4"),
+    poster: asset("/videos/feature-3.jpg"),
+  },
+  {
+    requirement: "要求 5",
+    title: "进入开锁区自动开锁",
+    copy: "系统准确判断钥匙进入或离开 0–1 m 开锁区，并执行开锁或闭锁动作。",
+    video: asset("/videos/feature-4.mp4"),
+    poster: asset("/videos/feature-4.jpg"),
+  },
+  {
+    requirement: "要求 6",
+    title: "修改钥匙身份 ID",
+    copy: "通过上位机修改钥匙的 4 位身份 ID，并立即按修改后的身份完成识别。",
+    video: asset("/videos/feature-5.mp4"),
+    poster: asset("/videos/feature-5.jpg"),
+  },
+] as const;
+
 const requirements = [
   ["01", "身份广播", "数字钥匙持续发送 4 位身份 ID"],
   ["02", "身份识别", "门锁读取 DIP 允许 ID 并实时比对"],
@@ -55,6 +93,7 @@ export default function Home() {
           </span>
         </a>
         <nav aria-label="页面导航">
+          <a href="#features">功能介绍</a>
           <a href="#software">软件演示</a>
           <a href="#hardware">实物展示</a>
           <a href="#system">系统方案</a>
@@ -84,7 +123,7 @@ export default function Home() {
               完成身份验证、距离与方位测量、分区判决以及自动开闭锁闭环。
             </p>
             <div className="hero-actions">
-              <a className="button primary" href="#software">查看运行效果 <span>↓</span></a>
+              <a className="button primary" href="#features">观看功能演示 <span>↓</span></a>
               <a className="button secondary" href={asset("/downloads/C题_基于无线通信的数字钥匙实验系统.pdf")} target="_blank">查看原题 PDF</a>
             </div>
             <div className="hero-facts" aria-label="系统关键指标">
@@ -107,6 +146,37 @@ export default function Home() {
               <p><small>FEATURED PREVIEW</small><strong>身份通过 · 已进入开锁区</strong></p>
               <b>0.65 m</b>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section feature-videos" id="features">
+        <div className="container">
+          <div className="section-heading split-heading">
+            <div>
+              <p className="overline">FEATURE DEMONSTRATION</p>
+              <h2>功能介绍视频</h2>
+            </div>
+            <p>五段现场演示依次对应题目要求 1、3、4、5、6。视频经过网页播放优化，点击播放即可查看完整过程。</p>
+          </div>
+          <div className="feature-video-grid">
+            {featureVideos.map((item, index) => (
+              <article className="feature-video-card" key={item.requirement}>
+                <div className="feature-video-frame">
+                  <video controls playsInline preload="metadata" poster={item.poster} aria-label={`${item.requirement}：${item.title}`}>
+                    <source src={item.video} type="video/mp4" />
+                    当前浏览器不支持视频播放。
+                  </video>
+                  <span>功能 {index + 1}</span>
+                </div>
+                <div className="feature-video-copy">
+                  <small>{item.requirement}</small>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                  <b>现场演示 · H.264</b>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -161,6 +231,22 @@ export default function Home() {
             <figure className="hardware-card">
               <img src={asset("/images/sound-light-1.jpeg")} alt="蓝牙声光控制模块" loading="lazy" />
               <figcaption><span>05 · CONTROLLER</span><strong>蓝牙声光 / DIP 模块</strong></figcaption>
+            </figure>
+            <figure className="hardware-card">
+              <img src={asset("/images/test-map.jpg")} alt="带区域地图的完整测试场地" loading="lazy" />
+              <figcaption><span>06 · TEST MAP</span><strong>120° 分区测试场地</strong><p>开锁区、迎宾区和感应区按实际距离铺设。</p></figcaption>
+            </figure>
+            <figure className="hardware-card">
+              <img src={asset("/images/calibration-console.jpg")} alt="数字钥匙系统全局校准界面" loading="lazy" />
+              <figcaption><span>07 · CALIBRATION</span><strong>全局定位校准</strong></figcaption>
+            </figure>
+            <figure className="hardware-card">
+              <img src={asset("/images/test-integrated.jpg")} alt="数字钥匙系统整机运行现场" loading="lazy" />
+              <figcaption><span>08 · LIVE SYSTEM</span><strong>整机联调运行</strong></figcaption>
+            </figure>
+            <figure className="hardware-card">
+              <img src={asset("/images/controller-detail.jpg")} alt="数字钥匙系统控制硬件细节" loading="lazy" />
+              <figcaption><span>09 · HARDWARE DETAIL</span><strong>门锁控制硬件</strong></figcaption>
             </figure>
           </div>
         </div>

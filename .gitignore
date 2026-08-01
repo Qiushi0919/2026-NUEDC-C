@@ -24,6 +24,9 @@ logs/
 tmp/
 *.csv
 *.zip
+
+# Local high-bitrate video masters (web copies live in website/public/videos)
+Vedios/*.mp4
 *.bak
 
 # Generated calibration reports and local published executables
