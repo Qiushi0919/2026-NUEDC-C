@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const asset = (path: string) => `${basePath}${path}`;
@@ -55,57 +55,40 @@ const photos = [
 
 export default function HardwareGallery() {
   const [active, setActive] = useState(0);
-  const [open, setOpen] = useState(false);
   const photo = photos[active];
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [open]);
-
   return (
-    <>
-      <div className="hardware-gallery">
-        <button className="hardware-stage" type="button" onClick={() => setOpen(true)} aria-label={`放大查看：${photo.title}`}>
+    <div className="hardware-gallery">
+      <figure className="hardware-stage" aria-live="polite">
+        <div className="hardware-stage-media">
           <img src={photo.image} alt={photo.title} />
-          <span>点击查看大图 ↗</span>
+        </div>
+        <figcaption>
+          <small>{String(active + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}</small>
           <div>
-            <small>{String(active + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}</small>
             <h3>{photo.title}</h3>
             <p>{photo.copy}</p>
           </div>
-        </button>
+        </figcaption>
+      </figure>
 
-        <div className="hardware-thumbnails" aria-label="实物与测试照片">
-          {photos.map((item, index) => (
-            <button
-              type="button"
-              className={index === active ? "active" : ""}
-              aria-pressed={index === active}
-              onClick={() => setActive(index)}
-              key={item.image}
-            >
-              <img src={item.image} alt="" loading="lazy" />
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{item.title}</strong>
-            </button>
-          ))}
-        </div>
+      <div className="hardware-thumbnails" aria-label="实物与测试照片">
+        {photos.map((item, index) => (
+          <button
+            type="button"
+            className={index === active ? "active" : ""}
+            aria-pressed={index === active}
+            onMouseEnter={() => setActive(index)}
+            onFocus={() => setActive(index)}
+            onClick={() => setActive(index)}
+            key={item.image}
+          >
+            <img src={item.image} alt="" loading="lazy" />
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{item.title}</strong>
+          </button>
+        ))}
       </div>
-
-      {open && (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label={photo.title} onClick={() => setOpen(false)}>
-          <button type="button" onClick={() => setOpen(false)} aria-label="关闭大图">×</button>
-          <figure onClick={(event) => event.stopPropagation()}>
-            <img src={photo.image} alt={photo.title} />
-            <figcaption><strong>{photo.title}</strong><span>{photo.copy}</span></figcaption>
-          </figure>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

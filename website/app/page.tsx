@@ -132,9 +132,9 @@ export default function Home() {
           <div className="section-heading split-heading">
             <div>
               <p className="overline">FEATURE DEMONSTRATION</p>
-              <h2>功能介绍视频</h2>
+              <h2>功能介绍</h2>
             </div>
-            <p>选择右侧功能即可切换现场演示；主播放器保留完整控制条，便于暂停检查定位数据与门锁动作。</p>
+            <p>五项核心功能均以真实实验视频验证；选择左侧功能，在同一影像舞台查看对应动作。</p>
           </div>
           <FeatureShowcase />
         </div>
@@ -168,7 +168,7 @@ export default function Home() {
           <div className="section-heading centered">
             <p className="overline">PHYSICAL SYSTEM</p>
             <h2>实物与测试照片</h2>
-            <p>首图展示 120° 分区测试场地；点击缩略图切换，点击主图可查看原始大图。</p>
+            <p>鼠标悬停缩略图即可切换大图，触屏设备可点击切换；所有照片均按原始比例完整显示。</p>
           </div>
           <HardwareGallery />
         </div>
@@ -187,7 +187,7 @@ export default function Home() {
               <figcaption>数字钥匙通过 UWB 与门锁端通信，MSPM0G3507 统一连接定位、声光、拨码和显示模块。</figcaption>
             </figure>
             <div className="system-overview-copy">
-              <span>为什么选择 UWB + PDoA</span>
+              <span>01</span>
               <h3>一个基站同时获得距离与方向</h3>
               <p>相较蓝牙 RSSI 和超声波方案，UWB 对多径与环境变化更不敏感；四天线阵列无需部署多台基站，适合门锁正前方 120° 范围内的实时定位。</p>
               <ul>
@@ -200,7 +200,7 @@ export default function Home() {
 
           <div className="algorithm-grid">
             <article className="algorithm-card formula-card">
-              <span>01 · RANGE</span>
+              <span>02</span>
               <h3>ToF 往返时间测距</h3>
               <p>收发两端交换时间戳，扣除钥匙端应答时间后得到飞行时间，再用标定参数修正系统偏差。</p>
               <div className="formula">T<sub>tof</sub> = (T<sub>round</sub> − T<sub>reply</sub>) / 2</div>
@@ -208,7 +208,7 @@ export default function Home() {
             </article>
             <article className="algorithm-card pdoa-card">
               <div>
-                <span>02 · ANGLE</span>
+                <span>03</span>
                 <h3>PDoA 相位差测角</h3>
                 <p>同一平面波到达两根天线的路程差形成相位差，由天线间距 d 和波长 λ 求得方位角 α。</p>
                 <div className="formula">α = arcsin(λΔφ / 2πd)</div>
@@ -216,7 +216,7 @@ export default function Home() {
               <img src={asset("/report/pdoa-principle.png")} alt="双天线 PDoA 方位角测量示意图" loading="lazy" />
             </article>
             <article className="algorithm-card filter-card">
-              <span>03 · FILTER</span>
+              <span>04</span>
               <h3>卡尔曼滤波与多基线融合</h3>
               <p>距离和角度分别进入一维卡尔曼滤波器；四天线提供多组基线结果，按有效性加权融合。</p>
               <ol>
@@ -238,18 +238,18 @@ export default function Home() {
           <div className="engineering-grid">
             <figure className="engineering-card engineering-wide">
               <img src={asset("/report/uwb-transmitter-circuit.png")} alt="UWB 发射模块参考电路" loading="lazy" />
-              <figcaption><small>KEY NODE</small><strong>钥匙端 UWB 发射电路</strong><p>3.3 V 供电，SPI 与主控连接；EXTON、WAKE 和 RST 完成上电与复位控制。</p></figcaption>
+              <figcaption><small>01</small><strong>钥匙端 UWB 发射电路</strong><p>3.3 V 供电，SPI 与主控连接；EXTON、WAKE 和 RST 完成上电与复位控制。</p></figcaption>
             </figure>
             <figure className="engineering-card engineering-wide">
               <img src={asset("/report/receiver-structure.png")} alt="四天线 UWB 接收模块结构图" loading="lazy" />
-              <figcaption><small>LOCK NODE</small><strong>四天线 UWB 接收结构</strong><p>接收模块输出身份 ID、距离和方位角，主控负责身份验证与区域判定。</p></figcaption>
+              <figcaption><small>02</small><strong>四天线 UWB 接收结构</strong><p>接收模块输出身份 ID、距离和方位角，主控负责身份验证与区域判定。</p></figcaption>
             </figure>
             <figure className="engineering-card flow-card">
               <img src={asset("/report/program-flow.png")} alt="数字钥匙系统程序流程图" loading="lazy" />
-              <figcaption><small>STATE MACHINE</small><strong>门锁端状态机</strong><p>等待 ID → 身份检测 → 读取位置 → 位置检测 → 控制声光与门锁。</p></figcaption>
+              <figcaption><small>03</small><strong>门锁端状态机</strong><p>等待 ID → 身份检测 → 读取位置 → 位置检测 → 控制声光与门锁。</p></figcaption>
             </figure>
             <article className="engineering-card protocol-card">
-              <small>CONTROL LOGIC</small>
+              <small>04</small>
               <h3>身份与位置双重验证</h3>
               <p>门锁只在钥匙 ID 与拨码允许 ID 一致、位置数据有效且进入目标区域时执行动作。</p>
               <dl>
@@ -281,7 +281,7 @@ export default function Home() {
               <img src={asset("/report/test-results.png")} alt="定位精度与身份区域功能测试记录表" loading="lazy" />
             </figure>
             <div>
-              <span>MEASURED, NOT ESTIMATED</span>
+              <span>01</span>
               <h3>覆盖 0.5–3.0 m 与 −40°–45°</h3>
               <p>定位测试包含近、中、远距离和左右方位；功能测试同时覆盖身份匹配、身份不匹配、开锁区、迎宾区与感应区。</p>
               <ul>

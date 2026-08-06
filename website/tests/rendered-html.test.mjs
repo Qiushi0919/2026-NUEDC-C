@@ -21,10 +21,11 @@ test("server-renders the complete project page", async () => {
 
   const html = await response.text();
   assert.match(html, /数字钥匙实验系统/);
-  assert.match(html, /功能介绍视频/);
+  assert.match(html, /功能介绍/);
   assert.match(html, /定位原理与算法/);
   assert.match(html, /电路与程序设计/);
   assert.match(html, /测试结果/);
+  assert.doesNotMatch(html, /为什么选择 UWB \+ PDoA/);
   assert.doesNotMatch(html, /现场演示 · H\.264/);
   assert.doesNotMatch(html, /从定位到门锁动作的完整闭环/);
 });
@@ -41,4 +42,15 @@ test("keeps the design report and report figures in the published bundle", async
     access(new URL("../public/downloads/2026-NUEDC-C-设计报告.pdf", import.meta.url)),
     access(new URL("../public/report/test-results.png", import.meta.url)),
   ]);
+});
+
+test("uses a focused video stage and hover-driven full-image gallery", async () => {
+  const feature = await readFile(new URL("../app/components/FeatureShowcase.tsx", import.meta.url), "utf8");
+  const gallery = await readFile(new URL("../app/components/HardwareGallery.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.doesNotMatch(feature, /feature-stage-copy/);
+  assert.match(feature, /controls=\{started\}/);
+  assert.match(gallery, /onMouseEnter=\{\(\) => setActive\(index\)\}/);
+  assert.match(styles, /\.hardware-stage-media img[^}]*object-fit: contain/s);
 });
