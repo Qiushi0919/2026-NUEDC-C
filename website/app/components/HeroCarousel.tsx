@@ -64,10 +64,6 @@ export default function HeroCarousel() {
       tabIndex={0}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
-      }}
       onKeyDown={(event) => {
         if (event.key === "ArrowLeft") move(-1);
         if (event.key === "ArrowRight") move(1);

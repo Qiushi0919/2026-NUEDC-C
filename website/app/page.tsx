@@ -44,7 +44,11 @@ export default function Home() {
     <main>
       <header className="topbar">
         <a className="brand" href="#top" aria-label="返回首页">
-          <span className="brand-mark">C</span>
+          <span className="brand-logos">
+            <img className="brand-logo-hust" src={asset("/images/hust-logo.png")} alt="华中科技大学" />
+            <span className="brand-logo-divider" />
+            <img className="brand-logo-nuedc" src={asset("/images/nuedc-badge.png")} alt="全国大学生电子设计竞赛" />
+          </span>
           <span>
             <strong>数字钥匙实验系统</strong>
             <small>2026 NUEDC · C Problem</small>
