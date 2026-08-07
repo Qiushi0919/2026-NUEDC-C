@@ -54,3 +54,17 @@ test("uses a focused video stage and hover-driven full-image gallery", async () 
   assert.match(gallery, /onMouseEnter=\{\(\) => setActive\(index\)\}/);
   assert.match(styles, /\.hardware-stage-media img[^}]*object-fit: contain/s);
 });
+
+test("adds a wide hero carousel and the selected team photo", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const carousel = await readFile(new URL("../app/components/HeroCarousel.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(page, /<HeroCarousel \/>/);
+  assert.match(page, /id="team"/);
+  assert.match(carousel, /system-block\.png/);
+  assert.match(carousel, /pdoa-principle\.png/);
+  assert.match(carousel, /team-competition\.jpg/);
+  assert.match(styles, /\.hero \.container \{ width: 110vw; \}/);
+  await access(new URL("../public/images/team-competition.jpg", import.meta.url));
+});

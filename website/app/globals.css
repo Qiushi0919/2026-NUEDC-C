@@ -36,6 +36,7 @@ img { display: block; max-width: 100%; }
 
 @media (min-width: 1100px) {
   main { width: 125%; margin-left: -12.5%; zoom: 0.8; }
+  .hero .container { width: 110vw; }
 }
 
 .topbar {
@@ -117,6 +118,20 @@ nav a:hover::after { transform: scaleX(1); }
 
 .hero-visual { overflow: hidden; border: 1px solid #adc9df; border-radius: 20px; background: #071426; box-shadow: 0 30px 85px rgba(8, 43, 80, 0.23); transform: perspective(1500px) rotateY(-2deg); }
 .hero-visual > img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.hero-carousel { position: relative; }
+.hero-carousel:focus-visible { outline: 3px solid rgba(26, 115, 232, 0.65); outline-offset: 4px; }
+.hero-carousel-media { position: relative; display: grid; overflow: hidden; aspect-ratio: 16 / 9; place-items: center; background: #071426; }
+.hero-carousel-media > img { width: 100%; height: 100%; object-fit: cover; animation: hero-slide-in 0.45s ease both; }
+.hero-carousel-media > img[data-fit="contain"] { padding: 22px; object-fit: contain; background: #fff; }
+.hero-carousel-arrow { position: absolute; z-index: 3; top: 50%; display: grid; width: 40px; height: 40px; place-items: center; padding: 0 0 3px; border: 1px solid rgba(255, 255, 255, 0.48); border-radius: 50%; color: #fff; background: rgba(7, 20, 38, 0.72); font-size: 29px; line-height: 1; cursor: pointer; backdrop-filter: blur(7px); transform: translateY(-50%); transition: background 0.2s ease, transform 0.2s ease; }
+.hero-carousel-arrow:hover { background: rgba(0, 91, 172, 0.9); transform: translateY(-50%) scale(1.05); }
+.hero-carousel-arrow:focus-visible, .hero-carousel-dots button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.hero-carousel-arrow.previous { left: 14px; }
+.hero-carousel-arrow.next { right: 14px; }
+.hero-carousel-dots { position: absolute; z-index: 3; right: 15px; bottom: 13px; display: flex; gap: 6px; padding: 7px 9px; border-radius: 999px; background: rgba(7, 20, 38, 0.72); backdrop-filter: blur(8px); }
+.hero-carousel-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: #7890a5; cursor: pointer; transition: width 0.2s ease, background 0.2s ease; }
+.hero-carousel-dots button.active { width: 20px; border-radius: 999px; background: #fff; }
+@keyframes hero-slide-in { from { opacity: 0.3; transform: scale(1.015); } to { opacity: 1; transform: scale(1); } }
 .window-chrome { display: flex; height: 38px; align-items: center; gap: 7px; padding: 0 13px; color: #bcd4e9; background: #0d1d31; font-size: 9px; }
 .window-chrome > span { width: 7px; height: 7px; border-radius: 50%; background: #5a7188; }
 .window-chrome > span:first-child { background: #ef5c57; }
@@ -128,7 +143,7 @@ nav a:hover::after { transform: scaleX(1); }
 .featured-caption p { display: flex; flex: 1; flex-direction: column; margin: 0; line-height: 1.2; }
 .featured-caption small { color: #76bce8; font-size: 8px; letter-spacing: 0.15em; }
 .featured-caption strong { margin-top: 5px; font-size: 12px; }
-.featured-caption > b { color: #5ee2ae; font-size: 18px; }
+.featured-caption > b { max-width: 34%; color: #5ee2ae; font-size: 13px; text-align: right; }
 .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #31d890; box-shadow: 0 0 0 6px rgba(49, 216, 144, 0.13); }
 
 .section { padding: 88px 0; }
@@ -186,21 +201,20 @@ nav a:hover::after { transform: scaleX(1); }
 
 .hardware-gallery { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.8fr); gap: 16px; }
 .hardware-stage { display: grid; overflow: hidden; grid-template-rows: 360px auto; align-self: start; margin: 0; border: 1px solid #d8e1ea; border-radius: 18px; background: #fff; }
-.hardware-stage-media { display: grid; min-height: 0; place-items: center; overflow: hidden; padding: 16px 24px; background: #fff; }
-.hardware-stage-media img { width: auto; max-width: 86%; height: auto; max-height: 100%; object-fit: contain; }
+.hardware-stage-media { position: relative; min-height: 0; overflow: hidden; background: #f4f6f8; }
+.hardware-stage-media img { position: absolute; inset: 16px 24px; width: calc(100% - 48px); max-width: none; height: calc(100% - 32px); object-fit: contain; }
 .hardware-stage figcaption { position: relative; z-index: 1; display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start; padding: 15px 20px 17px; border-top: 1px solid #d8e1ea; background: #fff; }
 .hardware-stage small { padding-top: 6px; color: #7b8996; font-family: ui-monospace, Consolas, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; }
 .hardware-stage h3 { margin: 0; font-size: 20px; }
 .hardware-stage p { max-width: 620px; margin: 5px 0 0; color: var(--muted); font-size: 12px; }
 .hardware-thumbnails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.hardware-thumbnails button { position: relative; overflow: hidden; min-height: 78px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
-.hardware-thumbnails button::after { position: absolute; inset: 35% 0 0; content: ""; background: linear-gradient(transparent, rgba(6, 20, 34, 0.92)); }
+.hardware-thumbnails button { position: relative; display: grid; overflow: hidden; min-height: 78px; grid-template-columns: 30px minmax(0, 1fr); grid-template-rows: 58px 20px; align-items: center; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; }
 .hardware-thumbnails button.active { border-color: var(--hust); box-shadow: 0 0 0 2px rgba(0, 91, 172, 0.14); }
-.hardware-thumbnails img { width: 100%; height: 78px; object-fit: cover; transition: transform 0.25s ease; }
+.hardware-thumbnails img { grid-column: 1 / -1; width: 100%; height: 58px; padding: 4px; object-fit: contain; background: #eef2f5; transition: transform 0.25s ease; }
 .hardware-thumbnails button:hover img { transform: scale(1.04); }
-.hardware-thumbnails span, .hardware-thumbnails strong { position: absolute; z-index: 2; bottom: 8px; color: #fff; }
-.hardware-thumbnails span { left: 9px; color: #77d9ef; font-family: ui-monospace, Consolas, monospace; font-size: 9px; }
-.hardware-thumbnails strong { right: 9px; left: 32px; overflow: hidden; font-size: 10px; line-height: 1.2; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.hardware-thumbnails span, .hardware-thumbnails strong { position: static; z-index: 2; overflow: hidden; color: var(--ink); line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+.hardware-thumbnails span { padding-left: 8px; color: var(--cyan); font-family: ui-monospace, Consolas, monospace; font-size: 8px; }
+.hardware-thumbnails strong { padding-right: 8px; font-size: 9px; text-align: left; }
 
 .principles { background: #fff; border-top: 1px solid var(--line); }
 .system-overview { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr); gap: 24px; align-items: stretch; }
@@ -261,6 +275,15 @@ nav a:hover::after { transform: scaleX(1); }
 .result-detail p, .result-detail li { color: var(--muted); font-size: 12px; }
 .result-detail ul { padding-left: 18px; }
 
+.team-section { background: #f7fafc; border-top: 1px solid var(--line); }
+.team-card { display: grid; overflow: hidden; grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr); align-items: center; margin: 0; border: 1px solid #d9dfe6; border-radius: 18px; background: #fff; }
+.team-card > img { width: 100%; height: auto; object-fit: contain; }
+.team-card figcaption { padding: 34px; }
+.team-card figcaption small { color: var(--hust); font-size: 9px; font-weight: 850; letter-spacing: 0.14em; }
+.team-card h3 { margin: 7px 0 12px; font-size: 27px; line-height: 1.25; }
+.team-card p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.team-card p strong { color: var(--ink); }
+
 .resources { background: #f7fbff; }
 .resource-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .resource-card { display: grid; grid-template-columns: 55px 1fr auto; gap: 17px; align-items: center; min-height: 140px; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 13px 38px rgba(10, 48, 92, 0.08); transition: transform 0.2s ease, border-color 0.2s ease; }
@@ -294,6 +317,8 @@ footer .footer-grid > div:last-child { display: flex; gap: 20px; color: #76c8e3;
   .hardware-gallery { grid-template-columns: 1fr; }
   .hardware-thumbnails { grid-template-columns: repeat(3, 1fr); }
   .system-overview, .result-detail { grid-template-columns: 1fr; }
+  .team-card { grid-template-columns: 1fr; }
+  .team-card figcaption { padding: 26px; }
   .algorithm-grid { grid-template-columns: 1fr 1fr; }
   .pdoa-card { grid-column: 1 / -1; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
@@ -314,6 +339,10 @@ footer .footer-grid > div:last-child { display: flex; gap: 20px; color: #76c8e3;
   .hero-lead { font-size: 14px; }
   .hero-facts { grid-template-columns: repeat(2, 1fr); }
   .window-chrome b { display: none; }
+  .hero-carousel-media > img[data-fit="contain"] { padding: 12px; }
+  .hero-carousel-arrow { width: 36px; height: 36px; font-size: 25px; }
+  .hero-carousel-arrow.previous { left: 9px; }
+  .hero-carousel-arrow.next { right: 9px; }
   .section { padding: 62px 0; }
   .split-heading { grid-template-columns: 1fr; gap: 15px; }
   .scenario-grid, .resource-grid { grid-template-columns: 1fr; }
@@ -325,11 +354,13 @@ footer .footer-grid > div:last-child { display: flex; gap: 20px; color: #76c8e3;
   .feature-selector button.active { padding-top: 23px; padding-bottom: 23px; }
   .scenario-copy { align-items: start; flex-direction: column; gap: 8px; }
   .hardware-stage { grid-template-rows: 360px auto; }
-  .hardware-stage-media { padding: 14px 20px; }
+  .hardware-stage-media img { inset: 14px 20px; width: calc(100% - 40px); height: calc(100% - 28px); }
   .hardware-stage figcaption { padding: 20px; }
   .hardware-stage h3 { font-size: 20px; }
   .hardware-thumbnails { grid-template-columns: repeat(2, 1fr); }
-  .hardware-thumbnails button, .hardware-thumbnails img { min-height: 120px; height: 120px; }
+  .hardware-thumbnails button { min-height: 120px; grid-template-rows: 94px 26px; }
+  .hardware-thumbnails img { height: 94px; }
+  .hardware-thumbnails span, .hardware-thumbnails strong { line-height: 26px; }
   .system-overview-copy { padding: 27px; }
   .algorithm-grid { grid-template-columns: 1fr; }
   .pdoa-card { grid-column: auto; grid-template-columns: 1fr; }

@@ -1,5 +1,6 @@
 import FeatureShowcase from "./components/FeatureShowcase";
 import HardwareGallery from "./components/HardwareGallery";
+import HeroCarousel from "./components/HeroCarousel";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const asset = (path: string) => `${basePath}${path}`;
@@ -111,19 +112,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hero-visual">
-            <div className="window-chrome">
-              <span /><span /><span />
-              <p>digital-key.console / live view</p>
-              <b>COM22 · 10 Hz</b>
-            </div>
-            <img src={asset("/images/software-unlock.png")} alt="数字钥匙实验系统开锁区运行界面" />
-            <div className="featured-caption">
-              <span className="status-dot" />
-              <p><small>FEATURED PREVIEW</small><strong>身份通过 · 已进入开锁区</strong></p>
-              <b>0.65 m</b>
-            </div>
-          </div>
+          <HeroCarousel />
         </div>
       </section>
 
@@ -291,6 +280,24 @@ export default function Home() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="section team-section" id="team">
+        <div className="container">
+          <div className="section-heading split-heading">
+            <div><p className="overline">OUR TEAM</p><h2>团队合照</h2></div>
+            <p>华中科技大学参赛队在全国大学生电子设计竞赛湖北赛区现场，携数字钥匙、门锁执行端与系统显示装置完成作品展示。</p>
+          </div>
+          <figure className="team-card">
+            <img src={asset("/images/team-competition.jpg")} alt="谢秋实、朱拓源、庞亚宸携作品参加全国大学生电子设计竞赛" loading="lazy" />
+            <figcaption>
+              <small>2026 NUEDC · C PROBLEM</small>
+              <h3>华中科技大学参赛队</h3>
+              <p><strong>谢秋实（队长）</strong> · 朱拓源 · 庞亚宸</p>
+              <p>从定位算法、上位机软件到门锁执行端，团队共同完成整套数字钥匙实验系统的设计、制作与现场验证。</p>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
