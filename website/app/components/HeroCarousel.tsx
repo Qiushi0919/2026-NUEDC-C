@@ -10,35 +10,30 @@ const slides = [
     image: asset("/images/software-unlock.png"),
     alt: "数字钥匙实验系统开锁区运行界面",
     title: "身份通过 · 已进入开锁区",
-    value: "0.65 m",
     fit: "cover",
   },
   {
     image: asset("/report/system-block.png"),
     alt: "数字钥匙实验系统总体框图",
     title: "系统总体构成 · UWB 定位与门锁控制",
-    value: "系统框图",
     fit: "contain",
   },
   {
     image: asset("/report/pdoa-principle.png"),
     alt: "双天线 PDoA 方位角测量原理图",
     title: "PDoA 方位角测量 · 由相位差反演方向",
-    value: "相位差",
     fit: "contain",
   },
   {
     image: asset("/report/program-flow.png"),
     alt: "数字钥匙实验系统程序流程图",
     title: "身份与位置双重验证 · 状态机闭环",
-    value: "程序流程",
     fit: "contain",
   },
   {
     image: asset("/images/team-competition.jpg"),
     alt: "谢秋实、朱拓源、庞亚宸携作品参加全国大学生电子设计竞赛",
     title: "参赛团队 · 华中科技大学",
-    value: "团队合照",
     fit: "contain",
   },
 ] as const;
@@ -80,19 +75,8 @@ export default function HeroCarousel() {
     >
       <div className="window-chrome">
         <span /><span /><span />
-        <p>digital-key.console / live view</p>
+        <p>digital-key.console / live view · {slide.title}</p>
         <b>{String(active + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}</b>
-      </div>
-
-      <div className="hero-carousel-media" aria-live="polite">
-        <img
-          key={slide.image}
-          src={slide.image}
-          alt={slide.alt}
-          data-fit={slide.fit}
-        />
-        <button type="button" className="hero-carousel-arrow previous" onClick={() => move(-1)} aria-label="上一张">‹</button>
-        <button type="button" className="hero-carousel-arrow next" onClick={() => move(1)} aria-label="下一张">›</button>
         <div className="hero-carousel-dots" aria-label="选择项目画面">
           {slides.map((item, index) => (
             <button
@@ -107,10 +91,15 @@ export default function HeroCarousel() {
         </div>
       </div>
 
-      <div className="featured-caption">
-        <span className="status-dot" />
-        <p><small>FEATURED PREVIEW</small><strong>{slide.title}</strong></p>
-        <b>{slide.value}</b>
+      <div className="hero-carousel-media" aria-live="polite">
+        <img
+          key={slide.image}
+          src={slide.image}
+          alt={slide.alt}
+          data-fit={slide.fit}
+        />
+        <button type="button" className="hero-carousel-arrow previous" onClick={() => move(-1)} aria-label="上一张">‹</button>
+        <button type="button" className="hero-carousel-arrow next" onClick={() => move(1)} aria-label="下一张">›</button>
       </div>
     </div>
   );

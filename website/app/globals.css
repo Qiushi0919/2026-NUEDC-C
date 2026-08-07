@@ -128,23 +128,17 @@ nav a:hover::after { transform: scaleX(1); }
 .hero-carousel-arrow:focus-visible, .hero-carousel-dots button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .hero-carousel-arrow.previous { left: 14px; }
 .hero-carousel-arrow.next { right: 14px; }
-.hero-carousel-dots { position: absolute; z-index: 3; right: 15px; bottom: 13px; display: flex; gap: 6px; padding: 7px 9px; border-radius: 999px; background: rgba(7, 20, 38, 0.72); backdrop-filter: blur(8px); }
-.hero-carousel-dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: #7890a5; cursor: pointer; transition: width 0.2s ease, background 0.2s ease; }
-.hero-carousel-dots button.active { width: 20px; border-radius: 999px; background: #fff; }
+.hero-carousel-dots { display: flex; flex: 0 0 auto; align-items: center; gap: 5px; margin-left: 5px; }
+.hero-carousel-dots button { width: 6px; height: 6px; padding: 0; border: 0; border-radius: 50%; background: #6f879c; cursor: pointer; transition: width 0.2s ease, background 0.2s ease; }
+.hero-carousel-dots button.active { width: 16px; border-radius: 999px; background: #fff; }
 @keyframes hero-slide-in { from { opacity: 0.3; transform: scale(1.015); } to { opacity: 1; transform: scale(1); } }
 .window-chrome { display: flex; height: 38px; align-items: center; gap: 7px; padding: 0 13px; color: #bcd4e9; background: #0d1d31; font-size: 9px; }
 .window-chrome > span { width: 7px; height: 7px; border-radius: 50%; background: #5a7188; }
 .window-chrome > span:first-child { background: #ef5c57; }
 .window-chrome > span:nth-child(2) { background: #e8b04a; }
 .window-chrome > span:nth-child(3) { background: #31b879; }
-.window-chrome p { flex: 1; margin: 0 0 0 5px; letter-spacing: 0.09em; }
+.window-chrome p { overflow: hidden; flex: 1; margin: 0 0 0 5px; letter-spacing: 0.09em; text-overflow: ellipsis; white-space: nowrap; }
 .window-chrome b { color: #6ee7c0; letter-spacing: 0.07em; }
-.featured-caption { display: flex; align-items: center; gap: 12px; padding: 13px 16px; color: #e9f7ff; background: #0d1d31; }
-.featured-caption p { display: flex; flex: 1; flex-direction: column; margin: 0; line-height: 1.2; }
-.featured-caption small { color: #76bce8; font-size: 8px; letter-spacing: 0.15em; }
-.featured-caption strong { margin-top: 5px; font-size: 12px; }
-.featured-caption > b { max-width: 34%; color: #5ee2ae; font-size: 13px; text-align: right; }
-.status-dot { width: 9px; height: 9px; border-radius: 50%; background: #31d890; box-shadow: 0 0 0 6px rgba(49, 216, 144, 0.13); }
 
 .section { padding: 88px 0; }
 .section-heading { margin-bottom: 28px; }
