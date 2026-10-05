@@ -126,3 +126,7 @@ dotnet run --project .\pc-software\src\DigitalKeyDisplay\DigitalKeyDisplay.cspro
 - 上位机联调说明：`pc-software/CONTROL_LINK.md`
 - 控制模块协议：`firmware/sound-light-controller/Doc/Digital_Key_UART_Protocol.md`
 - 蓝牙说明：`firmware/sound-light-controller/Doc/Bluetooth_Protocol.md`
+
+## Personal portfolio / 个人主页
+
+[谢秋实 / Qiushi Xie · 中文主页](https://qiushi0919.cn/) · [English portfolio](https://qiushi0919.github.io/)
