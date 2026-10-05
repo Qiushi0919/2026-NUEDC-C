@@ -1,3 +1,4 @@
+import AuthorContacts from "./components/AuthorContacts";
 import FeatureShowcase from "./components/FeatureShowcase";
 import HardwareGallery from "./components/HardwareGallery";
 import HeroCarousel from "./components/HeroCarousel";
@@ -95,13 +96,16 @@ export default function Home() {
               以 120° UWB 定位基站、数字钥匙信标、Windows 上位机和蓝牙声光门锁为核心，
               完成身份验证、距离与方位测量、分区判决以及自动开闭锁。
             </p>
-            <div className="team-signature" aria-label="参赛队员">
-              <span>华中科技大学参赛队</span>
-              <strong>谢秋实 <em>队长</em></strong>
-              <i aria-hidden="true">·</i>
-              <strong>朱拓源</strong>
-              <i aria-hidden="true">·</i>
-              <strong>庞亚宸</strong>
+            <div className="author-contact-row">
+              <div className="team-signature" aria-label="参赛队员">
+                <span>华中科技大学参赛队</span>
+                <strong>谢秋实 <em>队长</em></strong>
+                <i aria-hidden="true">·</i>
+                <strong>朱拓源</strong>
+                <i aria-hidden="true">·</i>
+                <strong>庞亚宸</strong>
+              </div>
+              <AuthorContacts />
             </div>
             <div className="hero-actions">
               <a className="button primary" href="#features">观看功能演示 <span>↓</span></a>
